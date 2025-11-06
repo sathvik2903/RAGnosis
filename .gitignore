@@ -1,0 +1,10 @@
+﻿config.py
+*.env
+.env
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints
+venv/
+ENV/
+.vscode/
+.DS_Store
