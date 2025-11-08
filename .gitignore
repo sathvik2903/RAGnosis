@@ -8,3 +8,39 @@ venv/
 ENV/
 .vscode/
 .DS_Store
+desktop.ini
+refs/
+#Google Drive
+.DriveFS
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.temp
+~$*
+#Google Drive conflict files
+*_conflict*
+* (1).*
+* (2).*
+* (3).*
+#System-specific
+Icon?
+ehthumbs.db
+.fseventsd
+.Spotlight-V100
+.Trashes
+#Git-related
+.git/
+.gitignore
+.gitattributes
+#OS
+*.swp
+*.swo
+*.bak
+*.old
+*.log
+*.lock
+#IDE
+.vscode/
+*.iml
+*.code-workspace
