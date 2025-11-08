@@ -29,7 +29,7 @@ An advanced, AI-powered medical chatbot that leverages a biomedical **Neo4j know
 
 1. **Clone this repository:**
 
-git clone https://github.com/sathvik2903/MRD-RAG.git
+git clone https://github.com/sathvik2903/RAGnosis.git
 cd doctor-chatbot-neo4j
 
 text
