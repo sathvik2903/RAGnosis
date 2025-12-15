@@ -18,6 +18,7 @@ desktop.ini
 *.tmp
 *.temp
 ~$*
+refs/tags/desktop.ini
 #Google Drive conflict files
 *_conflict*
 * (1).*
