@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0">
+  <channel>
+    <title>PAHO/WHO | Pan American Health Organization</title>
+    <link>https://www.paho.org/en</link>
+    <description>PAHO news</description>
+    <language>en</language>
+    <item>
+      <title>Avian influenza in the Americas: animal outbreaks decline, but PAHO calls for continued vigilance</title>
+      <description>PAHO calls for continued vigilance as avian influenza animal outbreaks decline in the Americas.</description>
+      <link>https://www.paho.org/en/news/27-8-2026-avian-influenza-americas-animal-outbreaks-decline</link>
+      <pubDate>Thu, 27 Aug 2026 20:08:46 +0000</pubDate>
+    </item>
+    <item>
+      <title>Chile becomes first country in South America validated for eliminating dog-transmitted rabies</title>
+      <description>Chile becomes the first country in South America validated by WHO for eliminating dog-transmitted rabies as a public health problem.</description>
+      <link>https://www.paho.org/en/news/14-9-2026-chile-first-country-eliminate-rabies</link>
+      <pubDate>Mon, 14 Sep 2026 16:25:22 +0000</pubDate>
+    </item>
+  </channel>
+</rss>

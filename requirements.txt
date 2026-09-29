@@ -1,6 +1,7 @@
-flask
-flask-cors
+flask>=3.0.0
+flask-cors>=4.0.0
 cohere>=5.0.0
 neo4j>=5.14.0
-tqdm>=4.66.0
-gunicorn  
+gunicorn>=22.0.0
+Pillow>=10.0.0
+requests>=2.31.0

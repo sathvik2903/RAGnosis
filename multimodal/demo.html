@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RAGnosis Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0a0e1a;
+      --bg-2: #0d1424;
+      --panel: #111a2e;
+      --panel-2: #0c1322;
+      --line: #1f2c48;
+      --line-soft: #16213a;
+      --ink: #eef2fb;
+      --muted: #93a0bd;
+      --dim: #6b779a;
+      --accent: #5b8cff;
+      --accent-2: #7c5cff;
+      --accent-ink: #ffffff;
+      --ok: #57d69a;
+      --ok-bg: #102b1e;
+      --ok-line: #235c40;
+      --warn: #f6b26b;
+      --warn-bg: #2a220f;
+      --warn-line: #5a481c;
+      --bad: #f38b8b;
+      --bad-bg: #2c1414;
+      --bad-line: #6d2a2a;
+      --radius: 14px;
+      --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    body {
+      font-family: var(--sans);
+      margin: 0; padding: 2.5rem 1.25rem 4rem; line-height: 1.55;
+      color: var(--ink);
+      background:
+        radial-gradient(1100px 520px at 15% -10%, rgba(91,140,255,.16), transparent 60%),
+        radial-gradient(900px 480px at 95% 0%, rgba(124,92,255,.13), transparent 55%),
+        var(--bg);
+      background-attachment: fixed;
+    }
+    .wrap { max-width: 940px; margin: 0 auto; }
+
+    /* Header */
+    .masthead { display: flex; align-items: center; gap: .85rem; margin: 0 0 .35rem; }
+    .logo {
+      width: 40px; height: 40px; border-radius: 11px; flex: none;
+      display: grid; place-items: center; font-weight: 800; font-size: 1.15rem;
+      color: var(--accent-ink);
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 6px 20px rgba(91,140,255,.35);
+    }
+    h1 { margin: 0; font-size: 1.6rem; font-weight: 700; letter-spacing: -.02em; }
+    h1 .thin { color: var(--muted); font-weight: 500; }
+    .sub { color: var(--muted); margin: .1rem 0 1.5rem; font-size: .95rem; max-width: 70ch; }
+
+    /* Cards */
+    .card {
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1.35rem;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 1px 0 rgba(255,255,255,.02) inset, 0 10px 30px rgba(0,0,0,.28);
+    }
+
+    label { display: block; font-weight: 600; margin: 0 0 .4rem; font-size: .88rem; color: var(--ink); }
+    input[type=text], textarea {
+      width: 100%; padding: .7rem .8rem; border-radius: 10px;
+      border: 1px solid var(--line); background: var(--panel-2); color: var(--ink);
+      font: inherit; transition: border-color .15s, box-shadow .15s, background .15s;
+    }
+    input[type=text]::placeholder, textarea::placeholder { color: var(--dim); }
+    input[type=text]:focus, textarea:focus {
+      outline: none; border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(91,140,255,.22);
+      background: #0e1730;
+    }
+    textarea { min-height: 84px; resize: vertical; }
+    input[type=file] {
+      margin-top: .3rem; color: var(--muted); font-size: .88rem; width: 100%;
+    }
+    input[type=file]::file-selector-button {
+      margin-right: .7rem; padding: .45rem .8rem; border-radius: 8px; cursor: pointer;
+      border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+      font: inherit; font-weight: 600; transition: border-color .15s, background .15s;
+    }
+    input[type=file]::file-selector-button:hover { border-color: var(--accent); background: #0e1730; }
+
+    button {
+      margin-top: 1.25rem; padding: .7rem 1.35rem; border: 0; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: var(--accent-ink); font-weight: 600; cursor: pointer; font-size: .95rem;
+      box-shadow: 0 8px 22px rgba(91,140,255,.30);
+      transition: transform .12s ease, box-shadow .15s ease, opacity .15s;
+    }
+    button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(91,140,255,.42); }
+    button:active:not(:disabled) { transform: translateY(0); }
+    button:disabled { opacity: .55; cursor: default; box-shadow: none; }
+
+    .disclaimer {
+      font-size: .82rem; color: var(--warn); background: var(--warn-bg);
+      border: 1px solid var(--warn-line); border-left: 3px solid var(--warn);
+      border-radius: 10px; padding: .75rem .95rem; margin-bottom: 1.25rem;
+    }
+
+    .badge { display: inline-block; padding: .18rem .6rem; border-radius: 999px; font-size: .72rem; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; }
+    .badge.pass { background: var(--ok-bg); color: var(--ok); border: 1px solid var(--ok-line); }
+    .badge.redacted { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-line); }
+    .badge.withheld { background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad-line); }
+    .pill { display:inline-block; padding:.12rem .55rem; border-radius:999px; font-size:.7rem; font-weight:700;
+      border:1px solid var(--line); background:var(--panel-2); color:var(--muted); margin-right:.3rem; }
+    .pill.alert { background:var(--bad-bg); color:var(--bad); border-color:var(--bad-line); }
+    .pill.watch { background:var(--warn-bg); color:var(--warn); border-color:var(--warn-line); }
+    .pill.ok { background:var(--ok-bg); color:var(--ok); border-color:var(--ok-line); }
+    pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; font-family: var(--mono); font-size: .9rem; line-height: 1.6; }
+    .answer { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 1.1rem; }
+    .warn { color: var(--bad); }
+    .muted { color: var(--muted); font-size: .85rem; }
+    .evidence a { color: var(--accent); text-decoration: none; }
+    .evidence a:hover { text-decoration: underline; }
+    .row { display: flex; gap: 1rem 1.5rem; flex-wrap: wrap; align-items: center; }
+    .status { font-size: .84rem; color: var(--muted); }
+    .status > span { display: inline-flex; align-items: center; gap: .4rem; }
+    .ok { color: var(--ok); } .no { color: var(--bad); }
+    h3 { margin: 1.4rem 0 .5rem; font-size: .95rem; font-weight: 700; letter-spacing: .01em;
+      color: var(--ink); padding-bottom: .3rem; border-bottom: 1px solid var(--line-soft); }
+    ul { margin: .4rem 0; padding-left: 1.2rem; }
+    li { margin: .15rem 0; }
+    table { width:100%; border-collapse: collapse; margin:.5rem 0; font-size:.85rem; }
+    th, td { text-align:left; padding:.5rem .55rem; border-bottom:1px solid var(--line-soft); vertical-align: top; }
+    thead th { color:var(--muted); font-weight:600; border-bottom:1px solid var(--line);
+      text-transform: uppercase; font-size: .72rem; letter-spacing: .04em; }
+    tbody tr:hover { background: rgba(91,140,255,.05); }
+    code { background:var(--panel-2); border:1px solid var(--line-soft); padding:.08rem .35rem; border-radius:5px; font-family: var(--mono); font-size: .82em; }
+    details summary { cursor: pointer; }
+    a { color: var(--accent); }
+    .foot { color: var(--dim); font-size: .78rem; text-align: center; margin-top: 1.5rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="masthead">
+      <div class="logo">R</div>
+      <h1>RAGnosis <span class="thin">Agent</span></h1>
+    </div>
+    <p class="sub">Ask a question (with an optional image and optional location) &rarr; deterministic routing &rarr; graph, biomedical literature, multimodal observations and <strong>current public&#8209;health information</strong> &rarr; a grounded, safety&#8209;checked answer with full provenance, execution trace and timestamps.</p>
+
+    <div class="disclaimer">
+      Informational research assistant only. This is <strong>not</strong> a diagnostic tool, does not provide a medical
+      diagnosis, and does not assess whether you personally are infected. Live public-health data is not real-time or
+      globally exhaustive, and absence of a report is not proof no outbreak exists. Always consult a qualified clinician.
+    </div>
+
+    <div class="card">
+      <div class="row status">
+        <span>Vision: <span id="vision-status" class="muted">checking&hellip;</span></span>
+        <span>Generation: <span id="gen-status" class="muted">checking&hellip;</span></span>
+        <span>Health intelligence: <span id="health-status" class="muted">checking&hellip;</span></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <label for="question">Question</label>
+      <textarea id="question" placeholder="e.g. Is there a current dengue outbreak I should be aware of?">Is there a current disease outbreak I should be aware of?</textarea>
+
+      <label for="location" style="margin-top:1rem;">Location (optional &mdash; explicit only; never inferred)</label>
+      <input type="text" id="location" placeholder="e.g. Hyderabad, Telangana, India" />
+
+      <label for="image" style="margin-top:1rem;">Image (optional: png, jpg, jpeg, webp, bmp, tif, tiff)</label>
+      <input type="file" id="image" accept=".png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff" />
+
+      <button id="submit">Analyze</button>
+    </div>
+
+    <div id="result" class="card" style="display:none;">
+      <div class="row" style="align-items:center; justify-content:space-between;">
+        <h3 style="margin:0;">Answer</h3>
+        <span id="safety-badge" class="badge pass">pass</span>
+      </div>
+      <div id="answer" class="answer"></div>
+      <div id="trace"></div>
+      <div id="health"></div>
+      <div id="warnings"></div>
+      <div id="observations"></div>
+      <div id="evidence"></div>
+      <div id="limitations"></div>
+      <div id="meta" class="muted"></div>
+    </div>
+
+    <p class="foot">RAGnosis &mdash; evidence&#8209;grounded biomedical research agent. Informational use only.</p>
+  </div>
+
+  <script>
+    // Same-origin relative URLs so this works behind a proxy/preview host.
+    async function loadHealth() {
+      try {
+        const r = await fetch('health');
+        const h = await r.json();
+        setStatus('vision-status', h.vision_configured);
+        setStatus('gen-status', h.generation_configured);
+        setStatus('health-status', h.health_intelligence_configured);
+      } catch (e) {
+        ['vision-status','gen-status','health-status'].forEach(id =>
+          document.getElementById(id).textContent = 'unknown');
+      }
+    }
+    function setStatus(id, ok) {
+      const el = document.getElementById(id);
+      el.textContent = ok ? 'configured' : 'not configured';
+      el.className = ok ? 'ok' : 'no';
+    }
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"]/g, c => (
+        { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+    }
+
+    document.getElementById('submit').addEventListener('click', async () => {
+      const btn = document.getElementById('submit');
+      const question = document.getElementById('question').value.trim();
+      const location = document.getElementById('location').value.trim();
+      const file = document.getElementById('image').files[0];
+      const result = document.getElementById('result');
+      if (!question) { alert('Please enter a question.'); return; }
+
+      btn.disabled = true; btn.textContent = 'Analyzing…';
+      const fd = new FormData();
+      fd.append('question', question);
+      if (location) fd.append('location', location);
+      if (file) fd.append('image', file);
+
+      try {
+        const resp = await fetch('agent', { method: 'POST', body: fd });
+        const data = await resp.json();
+        result.style.display = 'block';
+        if (!resp.ok) { renderError(data.error || ('HTTP ' + resp.status)); return; }
+        render(data);
+      } catch (e) {
+        result.style.display = 'block';
+        renderError(String(e));
+      } finally {
+        btn.disabled = false; btn.textContent = 'Analyze';
+      }
+    });
+
+    function clearAll() {
+      ['warnings','observations','evidence','limitations','meta','trace','health']
+        .forEach(id => document.getElementById(id).innerHTML = '');
+    }
+
+    function renderError(msg) {
+      document.getElementById('safety-badge').style.display = 'none';
+      document.getElementById('answer').innerHTML = '<span class="warn">' + esc(msg) + '</span>';
+      clearAll();
+    }
+
+    function render(d) {
+      clearAll();
+      const badge = document.getElementById('safety-badge');
+      badge.style.display = 'inline-block';
+      badge.textContent = d.safety_action || 'pass';
+      badge.className = 'badge ' + (d.safety_action || 'pass');
+
+      document.getElementById('answer').innerHTML = '<pre>' + esc(d.answer) + '</pre>';
+
+      if (d.needs_location) {
+        document.getElementById('trace').innerHTML =
+          '<h3>Location required</h3><p class="muted">' + esc(d.location_prompt || '') + '</p>';
+        return;
+      }
+
+      // Execution trace (§17) — not chain-of-thought.
+      const t = d.trace || {};
+      const locs = (t.locations || []).map(l => esc(l.normalized || l.raw) +
+        ' <span class="muted">(' + esc(l.granularity) + ')</span>').join(', ') || '—';
+      const srcMap = t.sources || {};
+      const srcHtml = Object.keys(srcMap).length
+        ? Object.keys(srcMap).map(k => esc(k) + ': <strong>' + esc(srcMap[k]) + '</strong>').join(' &middot; ')
+        : '—';
+      const evc = t.evidence_counts || {};
+      const evcHtml = Object.keys(evc).length
+        ? Object.keys(evc).map(k => esc(k) + '=' + esc(evc[k])).join(', ')
+        : '—';
+      document.getElementById('trace').innerHTML =
+        '<h3>Execution trace</h3>' +
+        '<p class="muted">Route: <code>' + esc(t.route || d.route) + '</code> &middot; ' +
+        'Tools: ' + esc((t.tools_used || []).join(', ') || 'none') + '</p>' +
+        '<p class="muted">Retrieval: ' + esc(t.retrieval_status) + ' &middot; ' +
+        'Live data: ' + esc(t.live_data_status) + ' &middot; ' +
+        'Safety: ' + esc(t.safety_action) + '</p>' +
+        '<p class="muted">Sources queried: ' + srcHtml + '</p>' +
+        '<p class="muted">Evidence by type: ' + evcHtml + '</p>' +
+        '<p class="muted">Current data used: <strong>' + esc(String(!!t.used_current_data)) + '</strong>' +
+        ' &middot; Cache hit: <strong>' + esc(String(!!t.cache_hit)) + '</strong>' +
+        ' &middot; Conflicts present: <strong>' + esc(String(!!t.conflicts_present)) + '</strong></p>' +
+        '<p class="muted">Requested location(s): ' + locs + '</p>' +
+        (t.last_checked ? '<p class="muted">Last checked: <strong>' + esc(t.last_checked) + '</strong></p>' : '') +
+        ((t.router_reasons || []).length ? '<details><summary class="muted">why this route</summary><ul class="muted">' +
+          t.router_reasons.map(r => '<li>' + esc(r) + '</li>').join('') + '</ul></details>' : '');
+
+      // Live public-health findings (§15) — table for multiple diseases.
+      renderHealth(d.health);
+
+      const warns = (d.warnings || []);
+      document.getElementById('warnings').innerHTML = warns.length
+        ? '<h3>Safety warnings</h3><ul class="warn">' + warns.map(w => '<li>' + esc(w) + '</li>').join('') + '</ul>'
+        : '';
+
+      const obs = (d.observations || []);
+      document.getElementById('observations').innerHTML = obs.length
+        ? '<h3>Image observations</h3><ul>' + obs.map(o =>
+            '<li><strong>' + esc(o.label) + '</strong>: ' + esc(o.description) +
+            (o.confidence != null ? ' <span class="muted">(confidence ' + esc(o.confidence) + ')</span>' : '') +
+            '</li>').join('') + '</ul>'
+        : '';
+
+      // Evidence grouped by provenance kind (§14).
+      const ev = (d.evidence || []);
+      const groups = {};
+      ev.forEach(e => { (groups[e.kind] = groups[e.kind] || []).push(e); });
+      const labels = {
+        pubmed_evidence: 'PubMed literature',
+        neo4j_evidence: 'Graph knowledge',
+        health_surveillance: 'Public-health surveillance',
+        health_news: 'Secondary reporting (media)'
+      };
+      let evHtml = '<h3>Evidence (' + esc(d.retrieval_status) + ')</h3>';
+      if (!ev.length) { evHtml += '<p class="muted">Status: ' + esc(d.retrieval_status) + '</p>'; }
+      Object.keys(groups).forEach(k => {
+        evHtml += '<p class="muted"><strong>' + esc(labels[k] || k) + '</strong></p><ul class="evidence">' +
+          groups[k].map(e => {
+            const meta = e.metadata || {};
+            const dates = [];
+            const f = meta.finding;
+            if (f) { if (f.published_at) dates.push('published ' + esc(f.published_at));
+                     if (f.updated_at && f.updated_at !== f.published_at) dates.push('updated ' + esc(f.updated_at)); }
+            return '<li>' + (e.uri
+              ? '<a href="' + esc(e.uri) + '" target="_blank" rel="noopener">' + esc(e.title) + '</a>'
+              : esc(e.title)) +
+              (e.source ? ' <span class="muted">— ' + esc(e.source) + '</span>' : '') +
+              (dates.length ? ' <span class="muted">(' + dates.join(', ') + ')</span>' : '') +
+              '</li>';
+          }).join('') + '</ul>';
+      });
+      document.getElementById('evidence').innerHTML = evHtml;
+
+      const lims = (d.limitations || []);
+      document.getElementById('limitations').innerHTML = lims.length
+        ? '<h3>Limitations</h3><ul class="muted">' + lims.map(l => '<li>' + esc(l) + '</li>').join('') + '</ul>'
+        : '';
+
+      document.getElementById('meta').innerHTML =
+        'vision model: ' + esc(d.vision_model || '—') + ' · generation: ' + esc(d.generation_model || '—');
+    }
+
+    function renderHealth(h) {
+      const el = document.getElementById('health');
+      if (!h) { el.innerHTML = ''; return; }
+      let html = '<h3>Current public health information</h3>';
+      html += '<p class="muted">Live data status: <strong>' + esc(h.live_data_status) + '</strong>' +
+        (h.from_cache ? ' <span class="pill">cached</span>' : '') +
+        ' &middot; Last checked: <strong>' + esc(h.retrieved_at) + '</strong></p>';
+      html += '<p class="muted">Sources reached: ' + esc((h.sources_succeeded || []).join(', ') || 'none') +
+        ((h.sources_failed || []).length ? ' &middot; failed: ' + esc(h.sources_failed.join(', ')) : '') + '</p>';
+      (h.notes || []).forEach(n => { html += '<p class="muted">' + esc(n) + '</p>'; });
+
+      const fs = h.findings || [];
+      if (fs.length) {
+        html += '<table><thead><tr><th>Disease</th><th>Status</th><th>Transmission</th>' +
+          '<th>Affected areas</th><th>Relevance</th><th>Risk</th><th>Alert</th><th>Freshness</th><th>Sources</th></tr></thead><tbody>';
+        fs.forEach(f => {
+          const alertCls = f.alert_level === 'official_alert' || f.alert_level === 'elevated' ? 'alert'
+            : (f.alert_level === 'watch' ? 'watch' : '');
+          const qmatch = f.matched_query
+            ? ' <span class="pill">query match</span>' : '';
+          const areas = (f.affected_areas || []).length
+            ? esc((f.affected_areas || []).join(', ')) : '<span class="muted">—</span>';
+          html += '<tr>' +
+            '<td><strong>' + esc(f.disease_name) + '</strong>' + qmatch +
+              (f.finding_id ? '<br><span class="muted">id ' + esc(f.finding_id) + '</span>' : '') +
+              (f.uncertainty ? '<br><span class="muted">' + esc(f.uncertainty) + '</span>' : '') +
+              (f.conflict_summary ? '<br><span class="muted">' + esc(f.conflict_summary) + '</span>' : '') +
+              (f.data_gap_state ? '<br><span class="muted">gap: ' + esc(f.data_gap_state) + '</span>' : '') + '</td>' +
+            '<td>' + esc(f.status) + (f.status_source_term ? '<br><span class="muted">"' + esc(f.status_source_term) + '"</span>' : '') +
+              '<br><span class="muted">' + esc(f.geo_scope) + '</span></td>' +
+            '<td>' + esc(f.transmission_class) + '</td>' +
+            '<td>' + areas + '</td>' +
+            '<td>' + esc(f.relevance_to_location) + '<br><span class="muted">' + esc(f.requested_location) + '</span></td>' +
+            '<td>' + esc(f.risk_assessment) + (f.severity ? '<br>' + esc(f.severity) : '') + '</td>' +
+            '<td><span class="pill ' + alertCls + '">' + esc(f.alert_level) + '</span></td>' +
+            '<td>' + esc(f.freshness_state) + '<br><span class="muted">' + esc(f.updated_at || f.published_at || '—') + '</span></td>' +
+            '<td>' + (f.sources || []).map(s => {
+                const org = s.uri
+                  ? '<a href="' + esc(s.uri) + '" target="_blank" rel="noopener">' + esc(s.organization) + '</a>'
+                  : esc(s.organization);
+                const tier = s.tier ? ' <span class="muted">(' + esc(s.tier) + ')</span>' : '';
+                const exc = s.excerpt ? '<br><span class="muted">' + esc(s.excerpt.slice(0, 160)) + '</span>' : '';
+                return org + tier + exc;
+              }).join('<br><br>') + '</td>' +
+            '</tr>';
+        });
+        html += '</tbody></table>';
+        html += '<p class="muted" style="margin-top:8px">Legend: <strong>OBSERVED</strong> = image observation · ' +
+          '<strong>RETRIEVED</strong> = from a source · <strong>CURRENT</strong> = fresh live data (freshness "current") · ' +
+          '<strong>NOT ESTABLISHED</strong> = status unknown / no relevant report. Interpretation is never presented as source fact.</p>';
+      }
+      el.innerHTML = html;
+    }
+
+    loadHealth();
+  </script>
+</body>
+</html>

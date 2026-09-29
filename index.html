@@ -1,42 +1,3096 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>RAGnosis Chat</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RAGnosis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: Arial; text-align: center; margin-top: 50px; }
-    input { padding: 10px; width: 300px; }
-    button { padding: 10px; }
-    #response { margin-top: 20px; }
+    /* Digits always render in Times New Roman, even inside Georgia or Roboto Mono. */
+    @font-face {
+      font-family: "NumeralTNR";
+      src: local("Times New Roman"), local("TimesNewRoman"), local("Times");
+      unicode-range: U+0030-0039;
+    }
+
+    :root {
+      --bg: #000000;
+      --ink: #f3f3f3;
+      --muted: #8d8d8d;
+      --dim: #5c5c5c;
+      --line: #2c2c2c;
+      --panel: #0c0c0c;
+      --panel-2: #141414;
+      --ok: #ececec;
+      --bad: #7a7a7a;
+      --georgia: Georgia, "Times New Roman", Times, serif;
+      --mono: "Roboto Mono", monospace;
+      --nums: "Times New Roman", Times, serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); }
+    html {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+    body {
+      font-family: var(--georgia);
+      font-size: 17px;
+      line-height: 1.65;
+      letter-spacing: 0.01em;
+      font-kerning: normal;
+      font-feature-settings: "kern" 1, "liga" 1;
+      font-variant-numeric: lining-nums tabular-nums;
+      font-synthesis: none;
+      min-height: 100%;
+    }
+    a { color: inherit; }
+    button, input { font-family: inherit; }
+
+    .mono, code {
+      font-family: var(--mono);
+      font-style: normal;
+      letter-spacing: 0.02em;
+    }
+    .num {
+      font-family: var(--nums);
+      font-style: normal;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+
+    #ambient {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      display: block;
+      background: #000;
+    }
+    .app {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(0, 0, 0, 0.62);
+    }
+    .brand {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .nav-links {
+      display: flex;
+      gap: 2px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .nav-links a {
+      text-decoration: none;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 8px 11px;
+      border: 1px solid transparent;
+    }
+    .nav-links a.is-active {
+      color: var(--ink);
+      border-color: var(--line);
+    }
+    .nav-links a:hover { color: var(--ink); }
+
+    .page { display: none; }
+    .page.is-active { display: block; }
+
+    .shell {
+      width: min(1080px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 36px 0 88px;
+    }
+
+    .hero {
+      min-height: calc(100vh - 62px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 56px 20px 80px;
+    }
+    .eyebrow {
+      margin: 0 0 30px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* Three-line quote. Left aligned with equal vertical rhythm. */
+    .hero-quote {
+      margin: 0;
+      font-family: Georgia, serif;
+      font-weight: 400;
+      font-style: normal;
+      font-size: clamp(2.45rem, 1.2rem + 5vw, 5.35rem);
+      color: #f7f7f7;
+      font-kerning: normal;
+      font-feature-settings: "kern" 1, "liga" 1;
+      letter-spacing: 0.008em;
+      text-align: left;
+      max-width: 11.2em;
+    }
+
+    .hero-quote .q1,
+    .hero-quote .q2,
+    .hero-quote .q3 {
+      display: block;
+      margin: 0;
+      line-height: 1.12;
+      letter-spacing: 0.008em;
+    }
+
+    .hero-quote .q-pair {
+      display: block;
+      margin: 0.085em 0 0;
+    }
+
+    /* Smoother supporting typography */
+    .hero-lede {
+      margin: 36px auto 0;
+      max-width: 42rem;
+      color: #d2d2d2;
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: clamp(1.12rem, 0.98rem + 0.45vw, 1.38rem);
+      font-weight: 600;
+      line-height: 1.62;
+      letter-spacing: 0.005em;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .hero-actions {
+      margin-top: 38px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* Homepage-only atmosphere: restrained framing around the existing content. */
+    #page-home .hero {
+      position: relative;
+      isolation: isolate;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    #page-home .hero::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 34px;
+      width: min(720px, 72vw);
+      height: 1px;
+      transform: translateX(-50%);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent);
+      pointer-events: none;
+    }
+
+    #page-home .hero-lede {
+      color: #b7b7b7;
+      max-width: 38rem;
+    }
+
+    #page-home .section {
+      content-visibility: auto;
+      contain-intrinsic-size: 1px 420px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      border: 1px solid #d8d8d8;
+      background: #f3f3f3;
+      color: #111;
+      padding: 12px 18px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .btn.ghost {
+      background: transparent;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+    .btn:hover { filter: brightness(1.08); }
+    .btn:disabled { opacity: 0.55; cursor: wait; }
+
+    .query-note {
+      white-space: nowrap;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    /* Typography hierarchy */
+    body { font-family: "Segoe UI", Arial, sans-serif; }
+    h1, h2, h3, .hero-quote { font-family: Georgia, "Times New Roman", Times, serif; }
+    #page-home p, #page-about p, #page-contact p,
+    #page-home .hero-subtitle, #page-home .hero-lede {
+      font-family: "Segoe UI", Arial, sans-serif;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .mono, code, .eyebrow, .kicker, .brand, .nav-links a,
+    .context-line, .footer, .technical, .menu-code, .health-line {
+      font-family: "Roboto Mono", Consolas, "Courier New", monospace;
+    }
+    .meta-row span, .diagram, .diagram .node, pre.tree {
+      font-family: Consolas, "Courier New", monospace;
+    }
+    .composer input::placeholder {
+      font-family: "Roboto Mono", Consolas, "Courier New", monospace;
+    }
+        h2 {
+      margin: 0 0 14px;
+      font-family: var(--georgia);
+      font-size: clamp(1.65rem, 1.25rem + 1.3vw, 2.25rem);
+      font-weight: 400;
+      letter-spacing: 0.005em;
+      line-height: 1.28;
+    }
+    h3 {
+      margin: 0 0 10px;
+      font-family: var(--georgia);
+      font-size: 1.28rem;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+    p { margin: 0 0 14px; color: #cfcfcf; }
+    .muted { color: var(--muted); }
+    .section p,
+    .panel p,
+    .disclaimer,
+    .local-note,
+    .examples button,
+    .msg {
+      display: flex;
+      flex-direction: column;
+      width: fit-content;
+      max-width: min(82%, 720px);
+      margin: 0 0 16px;
+      padding: 13px 15px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      color: #e4e4e4;
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 15.5px;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      border: 1px solid var(--line);
+      background: rgba(12, 12, 12, 0.9);
+    }
+
+    .msg .who {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 6px;
+    }
+
+    .msg[data-who="You"] {
+      margin-right: auto;
+      border-color: #262626;
+      background: rgba(18, 18, 18, 0.92);
+    }
+
+    .msg[data-who="RAGnosis"] {
+      margin-left: auto;
+      border-color: #3a3a3a;
+      background: rgba(24, 24, 24, 0.92);
+    }
+    .composer { display: flex; gap: 8px; margin-top: 10px; }
+    input[type="text"] {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid var(--line);
+      background: #0a0a0a;
+      color: var(--ink);
+      font-size: 16px;
+      outline: none;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+    input[type="text"]:focus { border-color: #6a6a6a; }
+    .context-line {
+      margin: 10px 0 0;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+    .examples {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .examples button {
+      display: block;
+      width: 100%;
+      max-width: none;
+      text-align: left;
+      background: var(--panel);
+      color: #d0d0d0;
+      border: 1px solid var(--line);
+      padding: 12px 13px;
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1.45;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+    .examples button:hover { border-color: #555; color: #fff; }
+    .disclaimer {
+      margin-top: 16px;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .local-note {
+      display: none;
+      margin: 0 0 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 15px;
+    }
+    .local-note.is-on { display: block; }
+
+    .diagram {
+      display: grid;
+      gap: 8px;
+      margin: 8px 0 18px;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+    }
+    .diagram .node {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 12px 14px;
+      color: #ddd;
+    }
+    .diagram .arrow {
+      color: var(--dim);
+      padding-left: 14px;
+      font-size: 11px;
+    }
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .contact-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 14px;
+    }
+    .contact-list a {
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      text-decoration: none;
+    }
+    .contact-list a:hover { text-decoration: underline; }
+    .contact-list span {
+      display: block;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 4px;
+    }
+
+    pre.tree {
+      margin: 0;
+      padding: 16px 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: #cfcfcf;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.55;
+      overflow: auto;
+    }
+
+    .footer {
+      border-top: 1px solid var(--line);
+      padding: 18px 28px 28px;
+      color: var(--dim);
+      font-size: 11px;
+      font-family: var(--mono);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* Visual refinement */
+    .section p,
+    .panel p {
+      display: block;
+      width: auto;
+      max-width: none;
+      margin: 0 0 14px;
+      padding: 0;
+      white-space: normal;
+      border: 0;
+      background: transparent;
+      color: #cfcfcf;
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.72;
+      letter-spacing: 0.005em;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .hero-lede {
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.002em;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .panel,
+    .chat,
+    .diagram .node,
+    pre.tree,
+    .examples button,
+    .local-note {
+      border-radius: 16px;
+    }
+
+    .panel {
+      padding: 24px;
+      background: rgba(12,12,12,.72);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 18px 48px rgba(0,0,0,.18);
+    }
+
+    .chat {
+      border-radius: 18px;
+      background: rgba(8,8,8,.78);
+    }
+
+    .btn,
+    .pill,
+    .chip,
+    input[type="text"] {
+      border-radius: 12px;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .meta-row span {
+      display: inline-flex;
+      align-items: center;
+      width: auto;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 10px;
+      background: #0b0b0b;
+      color: #bdbdbd;
+    }
+
+    .stack-separator {
+      color: var(--dim);
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 14px;
+      align-self: center;
+    }
+
+    .built { gap: 9px; }
+    .chip { border-radius: 999px; }
+
+    .flow-step {
+      padding: 18px 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      margin: 7px 0;
+      background: rgba(10,10,10,.58);
+    }
+    .flow-step:first-child { margin-top: 0; }
+    .flow-step:last-child { border-bottom: 1px solid var(--line); }
+
+    .query-note {
+      border-radius: 12px;
+    }
+
+    /* ------------------------------------------------------------
+       DIAGNOSIS
+       ------------------------------------------------------------ */
+
+    .diagnosis-page {
+      padding-top: 38px;
+    }
+
+    .diagnosis-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .diagnosis-card {
+      overflow: hidden;
+    }
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding: 20px 22px;
+
+      border-bottom: 1px solid var(--border);
+    }
+
+    .chat-title {
+      margin: 0;
+
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .chat-status {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+
+      color: var(--grey);
+
+      font-family: var(--mono-font);
+      font-size: 11px;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+
+      border-radius: 50%;
+
+      background: #777;
+
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.045);
+    }
+
+    .status-dot.ok {
+      background: #cfcfcf;
+    }
+
+    .status-dot.bad {
+      background: #555;
+    }
+
+    .chat {
+      height: min(620px, 68vh);
+
+      overflow-y: auto;
+
+      padding: 28px 22px;
+
+      scrollbar-width: thin;
+      scrollbar-color: #444 transparent;
+    }
+
+    .chat::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .chat::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .chat::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 999px;
+    }
+
+    .message-row {
+      display: flex;
+
+      width: 100%;
+
+      margin-bottom: 25px;
+    }
+
+    .message-row.user {
+      justify-content: flex-start;
+    }
+
+    .message-row.assistant {
+      justify-content: flex-end;
+    }
+
+    .message {
+      max-width: min(78%, 760px);
+    }
+
+    .message-label {
+      margin-bottom: 7px;
+
+      color: var(--grey-dark);
+
+      font-family: var(--mono-font);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .message-row.assistant .message-label {
+      text-align: right;
+    }
+
+    .message-body {
+      padding: 16px 18px;
+
+      border: 1px solid var(--border);
+      border-radius: 18px;
+
+      background: rgba(15, 15, 15, 0.72);
+
+      color: var(--white-soft);
+
+      font-family: var(--ui-font);
+      font-size: 15px;
+      line-height: 1.68;
+
+      overflow-wrap: anywhere;
+    }
+
+    .message-row.user .message-body {
+      border-bottom-left-radius: 6px;
+    }
+
+    .message-row.assistant .message-body {
+      border-bottom-right-radius: 6px;
+      background: rgba(25, 25, 25, 0.74);
+    }
+
+    .message-body p {
+      margin: 0 0 13px;
+    }
+
+    .message-body p:last-child {
+      margin-bottom: 0;
+    }
+
+    .message-body strong {
+      color: var(--white);
+      font-weight: 650;
+    }
+
+    .message-body em {
+      color: #d1d1d1;
+    }
+
+    .message-body h1,
+    .message-body h2,
+    .message-body h3 {
+      margin: 20px 0 9px;
+
+      color: var(--white);
+
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .message-body h1:first-child,
+    .message-body h2:first-child,
+    .message-body h3:first-child {
+      margin-top: 0;
+    }
+
+    .message-body ul,
+    .message-body ol {
+      margin: 10px 0 15px;
+      padding-left: 24px;
+    }
+
+    .message-body li {
+      margin: 5px 0;
+      padding-left: 3px;
+    }
+
+    .message-body blockquote {
+      margin: 15px 0;
+      padding: 3px 0 3px 15px;
+
+      border-left: 2px solid #555;
+
+      color: var(--grey);
+    }
+
+    .message-body pre {
+      margin: 14px 0;
+
+      padding: 14px;
+
+      overflow-x: auto;
+
+      border: 1px solid var(--border);
+      border-radius: 10px;
+
+      background: #050505;
+
+      color: #d4d4d4;
+
+      font-family: var(--mono-font);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .message-body pre code {
+      padding: 0;
+
+      border: 0;
+      background: transparent;
+
+      font-size: inherit;
+    }
+
+    .composer {
+      display: flex;
+      gap: 10px;
+
+      padding: 15px;
+
+      border-top: 1px solid var(--border);
+
+      background: rgba(5, 5, 5, 0.7);
+    }
+
+    .composer input {
+      min-width: 0;
+      flex: 1;
+
+      border: 1px solid var(--border-strong);
+      border-radius: 13px;
+
+      outline: none;
+
+      background: rgba(255, 255, 255, 0.045);
+
+      padding: 13px 15px;
+
+      color: var(--white);
+
+      font-family: var(--ui-font);
+      font-size: 15px;
+
+      transition:
+        border-color 0.25s ease,
+        background 0.25s ease;
+    }
+
+    .composer input::placeholder {
+      color: #6d6d6d;
+    }
+
+    .composer input:focus {
+      border-color: rgba(255, 255, 255, 0.27);
+      background: rgba(255, 255, 255, 0.065);
+    }
+
+    .send-button {
+      flex: 0 0 auto;
+
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 13px;
+
+      background: #e7e7e7;
+
+      padding: 0 20px;
+
+      color: #050505;
+
+      font-family: var(--ui-font);
+      font-size: 14px;
+      font-weight: 600;
+
+      cursor: pointer;
+
+      transition:
+        transform 0.2s ease,
+        background 0.2s ease;
+    }
+
+    .send-button:hover {
+      transform: translateY(-1px);
+      background: #fff;
+    }
+
+    .send-button:disabled {
+      opacity: 0.45;
+      cursor: wait;
+      transform: none;
+    }
+
+    .diagnosis-disclaimer {
+      margin: 0;
+
+      padding: 17px 21px;
+
+      color: var(--grey);
+
+      font-family: var(--ui-font);
+      font-size: 12px;
+      line-height: 1.6;
+
+      border-top: 1px solid var(--border);
+    }
+
+    /* ------------------------------------------------------------
+       SANDWICH MENU
+       ------------------------------------------------------------ */
+
+    .menu-button {
+      position: fixed;
+
+      right: 24px;
+      bottom: 24px;
+
+      z-index: 20;
+
+      width: 48px;
+      height: 48px;
+
+      display: grid;
+      place-items: center;
+
+      border: 1px solid var(--border-strong);
+      border-radius: 50%;
+
+      background: rgba(8, 8, 8, 0.8);
+
+      color: var(--white);
+
+      cursor: pointer;
+
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+
+      transition:
+        transform 0.25s ease,
+        background 0.25s ease;
+    }
+
+    .menu-button:hover {
+      transform: scale(1.04);
+      background: rgba(35, 35, 35, 0.88);
+    }
+
+    .menu-icon {
+      width: 18px;
+      height: 14px;
+
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .menu-icon span {
+      width: 100%;
+      height: 1px;
+
+      background: #ddd;
+
+      transition:
+        transform 0.25s ease,
+        opacity 0.25s ease;
+    }
+
+    .menu-panel {
+      position: fixed;
+
+      right: 24px;
+      bottom: 84px;
+
+      z-index: 19;
+
+      width: min(390px, calc(100vw - 48px));
+
+      max-height: min(75vh, 680px);
+
+      overflow-y: auto;
+
+      padding: 8px;
+
+      border: 1px solid var(--border-strong);
+      border-radius: 20px;
+
+      background: rgba(7, 7, 7, 0.92);
+
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.55);
+
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+
+      opacity: 0;
+      visibility: hidden;
+
+      transform: translateY(10px) scale(0.98);
+      transform-origin: bottom right;
+
+      transition:
+        opacity 0.25s ease,
+        visibility 0.25s ease,
+        transform 0.25s ease;
+    }
+
+    .menu-panel.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+
+    .menu-section {
+      padding: 16px;
+
+      border-bottom: 1px solid var(--border);
+    }
+
+    .menu-section:last-child {
+      border-bottom: 0;
+    }
+
+    .menu-section-title {
+      margin: 0 0 9px;
+
+      color: var(--white);
+
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .menu-section p {
+      margin: 0;
+
+      color: var(--grey);
+
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .menu-code {
+      display: inline-block;
+
+      margin-top: 10px;
+
+      color: #bcbcbc;
+
+      font-family: var(--mono-font);
+      font-size: 11px;
+      line-height: 1.55;
+
+      white-space: normal;
+    }
+
+    .prompt-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+
+      margin-top: 11px;
+    }
+
+    .prompt {
+      border: 1px solid var(--border);
+      border-radius: 9px;
+
+      background: rgba(255, 255, 255, 0.035);
+
+      padding: 7px 9px;
+
+      color: #bdbdbd;
+
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .health-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      margin-top: 8px;
+
+      color: var(--grey);
+
+      font-family: var(--mono-font);
+      font-size: 11px;
+    }
+
+
+    @media (max-width: 860px) {
+      .query-note { white-space: normal; overflow-x: visible; }
+      .grid-2, .diag-layout, .split { grid-template-columns: 1fr; }
+      .nav { padding: 14px 16px; }
+      .shell { width: min(1080px, calc(100% - 28px)); }
+      .chat { max-height: 48vh; min-height: 320px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { scroll-behavior: auto !important; }
+    }
+
+    /* Exact hero quote presentation requested. */
+    .hero-quote {
+      font-family: Georgia, serif;
+      font-weight: 400;
+      font-style: normal;
+      font-size: clamp(3.9rem, 8.8vw, 7.25rem);
+      line-height: 0.9;
+      letter-spacing: -0.018em;
+      text-align: left;
+      max-width: 10.8em;
+    }
+
+    .hero-quote .q1,
+    .hero-quote .q2,
+    .hero-quote .q3 {
+      line-height: 0.9;
+      margin: 0;
+      letter-spacing: -0.018em;
+    }
+
+    /* The tight 0.9 line-height pulls lines together enough that the "p"/"g"
+       descenders on line 1 ("Ask the graph.") collide with the ascenders on
+       line 2 ("Understand the"). A small em-based top margin on the second
+       line box restores a clean optical gap and scales with the responsive
+       font-size, without touching the font, weight, alignment or size. */
+    .hero-quote .q-pair {
+      margin: 0.14em 0 0;
+    }
+
+    /* ============================================================
+       AGENT PAGE - monochrome, matches the RAGnosis identity.
+       Composed multimodal agent (POST /agent). Not a second theme;
+       reuses --bg / --ink / --line / --panel / --panel-2 and the
+       mono/serif fonts. Editorial hierarchy: the answer dominates,
+       everything else (trace, table, evidence, meta) is secondary.
+       ============================================================ */
+    .agent-page .shell { padding-top: 34px; max-width: 62rem; }
+
+    /* --- Heading ------------------------------------------------ */
+    .agent-heading { margin-bottom: 30px; }
+    .agent-heading h1 {
+      margin: 8px 0 16px;
+      font-family: var(--georgia);
+      font-weight: 400;
+      font-size: clamp(2.15rem, 1.3rem + 3vw, 3.4rem);
+      letter-spacing: 0.004em;
+      line-height: 1.12;
+      color: #f7f7f7;
+    }
+    .agent-heading p {
+      max-width: 46rem;
+      font-size: 15.5px;
+      line-height: 1.7;
+      color: #c9c9c9;
+    }
+
+    /* --- Generic panel (input + result) ------------------------- */
+    .agent-card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 22px 24px;
+      margin: 0 0 18px;
+    }
+    .agent-card h2 {
+      margin: 0 0 14px;
+      font-family: var(--georgia);
+      font-weight: 400;
+      font-size: 1.4rem;
+    }
+
+    /* --- Status row: compact monochrome pills ------------------- */
+    .agent-status-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 12px 16px;
+      margin: 0 0 18px;
+    }
+    .agent-status-bar .status-caption {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-right: 2px;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      padding: 5px 11px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .status-pill .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--dim);
+      flex: 0 0 auto;
+    }
+    .status-pill .status-label { color: var(--muted); }
+    .status-pill .status-value { color: var(--muted); }
+    .status-pill.is-ok { border-color: #4a4a4a; color: var(--ink); }
+    .status-pill.is-ok .dot { background: #e6e6e6; }
+    .status-pill.is-ok .status-value { color: var(--ink); }
+    .status-pill.is-off .dot { background: #3a3a3a; }
+    .status-pill.is-off .status-value { color: var(--bad); }
+
+    /* --- Input area -------------------------------------------- */
+    .agent-form-card { padding: 24px; }
+    .agent-field { display: block; margin: 0 0 18px; }
+    .agent-field:last-of-type { margin-bottom: 0; }
+    .agent-field-label {
+      display: block;
+      margin: 0 0 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .agent-field-hint {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: none;
+      color: var(--dim);
+    }
+    .agent-card textarea,
+    .agent-card input[type="text"],
+    .agent-card input[type="file"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      background: #0a0a0a;
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    /* The question is the primary input: taller, slightly larger. */
+    #agent-question {
+      min-height: 108px;
+      resize: vertical;
+      line-height: 1.55;
+      font-size: 16px;
+    }
+    .agent-card textarea:focus,
+    .agent-card input[type="text"]:focus { border-color: #7a7a7a; }
+    .agent-card input[type="file"] {
+      padding: 10px 12px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .agent-actions {
+      margin-top: 22px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    #agent-submit { min-width: 148px; }
+
+    /* --- Result: the answer is the visual focus ---------------- */
+    #agent-result { display: none; padding: 0; border: 0; background: none; }
+    .agent-answer-block {
+      border: 1px solid var(--line);
+      border-left: 3px solid #5a5a5a;
+      background: var(--panel);
+      padding: 24px 26px;
+      margin: 0 0 22px;
+    }
+    .agent-answer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .agent-answer-head h2 {
+      margin: 0;
+      font-family: var(--georgia);
+      font-weight: 400;
+      font-size: 1.1rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    /* Formatted answer body: the dominant typography on the page. */
+    .agent-answer {
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 17.5px;
+      line-height: 1.7;
+      color: #ededed;
+    }
+    .agent-answer > *:first-child { margin-top: 0; }
+    .agent-answer > *:last-child { margin-bottom: 0; }
+    .agent-answer p { margin: 0 0 0.85em; color: #ededed; }
+    .agent-answer ul,
+    .agent-answer ol { margin: 0 0 0.9em; padding-left: 1.4em; }
+    .agent-answer li { margin: 0 0 0.4em; line-height: 1.65; color: #ededed; }
+    .agent-answer h1,
+    .agent-answer h2,
+    .agent-answer h3 {
+      font-family: var(--georgia);
+      font-weight: 400;
+      line-height: 1.3;
+      margin: 1em 0 0.4em;
+      color: #f4f4f4;
+    }
+    .agent-answer h1 { font-size: 1.35em; }
+    .agent-answer h2 { font-size: 1.2em; }
+    .agent-answer h3 { font-size: 1.08em; }
+    .agent-answer strong { color: #ffffff; font-weight: 600; }
+    .agent-answer em { font-style: italic; }
+    .agent-answer code,
+    .agent-answer .inline-code {
+      font-family: var(--mono);
+      font-size: 0.86em;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      padding: 0.05em 0.35em;
+      color: #e6e6e6;
+    }
+    .agent-answer blockquote {
+      margin: 0 0 0.9em;
+      padding-left: 14px;
+      border-left: 2px solid var(--line);
+      color: #cfcfcf;
+    }
+    .agent-answer pre {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      padding: 14px 16px;
+      overflow-x: auto;
+      margin: 0 0 0.9em;
+    }
+    .agent-answer pre code { border: 0; background: none; padding: 0; }
+    .agent-answer .warn {
+      display: block;
+      border-left: 2px solid #6a6a6a;
+      padding-left: 12px;
+      color: #f0f0f0;
+    }
+
+    /* Safety badge (monochrome). */
+    .agent-badge {
+      display: inline-block;
+      padding: 4px 11px;
+      border: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .agent-badge.block,
+    .agent-badge.warn { color: #f0f0f0; border-color: #7a7a7a; }
+
+    /* --- Secondary result sections ----------------------------- */
+    .agent-section {
+      border-top: 1px solid var(--line);
+      padding-top: 20px;
+      margin: 0 0 22px;
+    }
+    .agent-section > h3 {
+      margin: 0 0 12px;
+      font-family: var(--mono);
+      font-weight: 500;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #cfcfcf;
+    }
+    /* Evidence typography ~14-15px. */
+    #agent-evidence ul,
+    #agent-observations ul { margin: 4px 0 14px; padding-left: 20px; }
+    #agent-evidence li,
+    #agent-observations li {
+      margin: 0 0 8px;
+      font-size: 14.5px;
+      line-height: 1.55;
+      color: #d6d6d6;
+    }
+    #agent-evidence p { margin: 14px 0 4px; }
+    #agent-result p { color: #cfcfcf; margin: 0 0 8px; font-size: 14.5px; line-height: 1.6; }
+    #agent-result .muted { color: var(--muted); }
+    #agent-result a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+    #agent-result a:hover { color: #ffffff; }
+    #agent-result code {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: #e2e2e2;
+    }
+
+    /* Execution trace: visually secondary, compact metadata. */
+    .agent-trace {
+      border: 1px solid var(--line);
+      border-top: 1px solid var(--line);
+      background: var(--panel);
+      padding: 16px 18px;
+      margin: 0 0 22px;
+    }
+    .agent-trace h3 {
+      margin: 0 0 10px;
+      font-family: var(--mono);
+      font-weight: 500;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .agent-trace p {
+      margin: 0 0 5px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 1.6;
+      letter-spacing: 0.02em;
+      color: var(--muted);
+    }
+    .agent-trace code { font-size: 11px; color: #e2e2e2; }
+    .agent-trace details { margin: 8px 0 0; }
+    .agent-trace summary { cursor: pointer; font-size: 11px; color: var(--dim); }
+    .agent-trace details ul { margin: 6px 0 0; padding-left: 18px; }
+    .agent-trace details li { font-size: 11px; color: var(--muted); margin: 0 0 3px; }
+
+    /* Safety warnings + limitations: distinct but monochrome. */
+    .agent-note {
+      border: 1px solid var(--line);
+      border-left: 3px solid #7a7a7a;
+      background: var(--panel-2);
+      padding: 14px 16px 6px;
+      margin: 0 0 22px;
+    }
+    .agent-note h3 {
+      margin: 0 0 8px;
+      font-family: var(--mono);
+      font-weight: 500;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #e6e6e6;
+    }
+    .agent-note ul { margin: 0 0 8px; padding-left: 20px; }
+    .agent-note li { margin: 0 0 6px; font-size: 14px; line-height: 1.55; color: #e2e2e2; }
+    .agent-note.is-limitations { border-left-color: var(--line); }
+    .agent-note.is-limitations li { color: var(--muted); }
+
+    .pill {
+      display: inline-block;
+      padding: 1px 7px;
+      border: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .pill.alert { color: #f0f0f0; border-color: #7a7a7a; }
+    .pill.watch { color: #cccccc; }
+
+    /* --- Public health table: dense, scrollable, secondary ----- */
+    .agent-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 6px 0 12px;
+      border: 1px solid var(--line);
+    }
+    #agent-result table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 760px;
+      font-size: 12.5px;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+    #agent-result th,
+    #agent-result td {
+      border-bottom: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      padding: 9px 12px;
+      text-align: left;
+      vertical-align: top;
+      line-height: 1.5;
+      color: #d6d6d6;
+    }
+    #agent-result th:last-child,
+    #agent-result td:last-child { border-right: 0; }
+    #agent-result tbody tr:last-child td { border-bottom: 0; }
+    #agent-result tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
+    #agent-result thead th {
+      position: sticky;
+      top: 0;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--panel-2);
+      white-space: nowrap;
+    }
+    #agent-result td .muted { font-size: 11.5px; }
+    .agent-legend { font-size: 11.5px !important; color: var(--muted); }
+
+    /* Model metadata: quietest line on the page (~11px mono). */
+    .agent-meta {
+      margin-top: 6px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: var(--dim);
+    }
+    .agent-disclaimer {
+      margin-top: 18px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 640px) {
+      .agent-card { padding: 18px 16px; }
+      .agent-answer-block { padding: 20px 18px; }
+      .agent-answer { font-size: 16.5px; }
+      .agent-status-bar { padding: 12px 14px; }
+    }
   </style>
 </head>
 <body>
+  <canvas id="ambient" aria-hidden="true"></canvas>
 
-<h1>RAGnosis Chatbot 🤖</h1>
+  <div class="app">
+    <header class="nav">
+      <a class="brand" href="#home" data-page="home">RAGnosis</a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#home" data-page="home">Home</a>
+        <a href="#about" data-page="about">About</a>
+        <a href="#diagnosis" data-page="diagnosis">Diagnosis</a>
+        <a href="#agent" data-page="agent">Agent</a>
+        <a href="#contact" data-page="contact">Contact</a>
+      </nav>
+    </header>
 
-<input type="text" id="message" placeholder="Enter your symptoms..." />
-<button onclick="sendMessage()">Send</button>
+    <main>
+      <section id="page-home" class="page is-active">
+        <div class="hero">
+          <p class="eyebrow">Biomedical graph RAG</p>
+          <h1 class="hero-quote">
+            <span class="q1">Ask the graph.</span>
+            <span class="q-pair">
+              <span class="q2">Understand the</span>
+              <span class="q3">answer.</span>
+            </span>
+          </h1>
+          <p class="hero-lede">
+            RAGnosis is a biomedical assistant with two paths. The Diagnosis chat retrieves related entities from a remote Neo4j Aura knowledge graph and Cohere writes a reply from that context. The Agent adds optional image analysis, biomedical literature and current public-health information, with full provenance.
+          </p>
+          <div class="hero-actions">
+            <a class="btn" href="#diagnosis" data-page="diagnosis">Open diagnosis</a>
+            <a class="btn ghost" href="#agent" data-page="agent">Open agent</a>
+            <a class="btn ghost" href="#about" data-page="about">Read the architecture</a>
+          </div>
+        </div>
 
-<div id="response"></div>
+        <div class="shell">
+          <div class="section grid-2">
+            <div>
+              <p class="kicker">What it does</p>
+              <h2>A chat that looks up the graph before it speaks.</h2>
+            </div>
+            <div>
+              <p>You describe symptoms in the browser. Flask posts that turn, plus the on-page transcript, to <span class="mono">POST /chat</span>. The server searches Neo4j Aura, then asks Cohere to reply using the retrieved properties and the conversation so far.</p>
+              <p class="query-note">The live production path is keyword retrieval, not vector search. Matching uses Cypher <span class="mono">CONTAINS</span> over <span class="mono">name</span>, <span class="mono">text</span>, <span class="mono">description</span>, <span class="mono">disease</span>, <span class="mono">symptom</span>, <span class="mono">title</span>, and <span class="mono">canonical_name</span>, limited to five nodes. Embedding fields are stripped before context is sent to the model.</p>
+            </div>
+          </div>
 
-<script>
-async function sendMessage() {
-  const msg = document.getElementById("message").value;
+          <hr class="rule" />
 
-  const res = await fetch("https://ragnosis-w89u.onrender.com/chat", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      message: msg,
-      conversation: []
-    })
-  });
+          <div class="section">
+            <p class="kicker">Query path</p>
+            <h2>How a turn moves through the system</h2>
+            <div class="flow">
+              <div class="flow-step">
+                <div class="flow-n">01</div>
+                <div>
+                  <strong>Browser</strong>
+                  <p><span class="mono">index.html</span> keeps the transcript as patient/doctor turns. There is no durable server-side conversation store.</p>
+                </div>
+              </div>
+              <div class="flow-step">
+                <div class="flow-n">02</div>
+                <div>
+                  <strong>Flask</strong>
+                  <p><span class="mono">app.py</span> serves the UI, exposes <span class="mono">GET /health</span>, and runs retrieval plus generation on <span class="mono">POST /chat</span>.</p>
+                </div>
+              </div>
+              <div class="flow-step">
+                <div class="flow-n">03</div>
+                <div>
+                  <strong>Neo4j Aura</strong>
+                  <p>A remote graph, connected lazily over <span class="mono">neo4j+s</span>. The web process does not run Neo4j itself.</p>
+                </div>
+              </div>
+              <div class="flow-step">
+                <div class="flow-n">04</div>
+                <div>
+                  <strong>Cohere Chat</strong>
+                  <p>Primary model <span class="mono">command-a-03-2025</span>, with fallback <span class="mono">command-r7b-12-2024</span> if the primary model is unavailable.</p>
+                </div>
+              </div>
+            </div>
+          </div>
 
-  const data = await res.json();
-  document.getElementById("response").innerText = data.response;
-}
-</script>
+          <div class="section grid-2">
+            <div>
+              <p class="kicker">Production</p>
+              <h2>What is deployed</h2>
+              <p>The Render web service is Flask, remote Neo4j Aura, Cohere Chat, and this HTML UI. gunicorn binds <span class="mono">0.0.0.0</span> and the host-provided <span class="mono">PORT</span>. <span class="mono">GET /health</span> reports process liveness even when Aura or Cohere is down. <span class="mono">/chat</span> returns the real retrieval or generation error instead of a fabricated answer.</p>
+              <p>The production path has two experiences: the multiround Neo4j + Cohere Diagnosis chat, and the composed multimodal Agent (optional image analysis, biomedical literature and current public-health information). Voice input, speech synthesis, Gradio, and notebook-only RAG variants are not part of the production path.</p>
+              <div class="meta-row">
+                <span>runtime · Python 3.11</span>
+                <span>start · gunicorn app:app</span>
+                <span>health · GET /health</span>
+              </div>
+            </div>
+            <div>
+              <p class="kicker">Experiments</p>
+              <h2>What stays off the live path</h2>
+              <p>Notebooks, Colab pipeline exports, and milestone diagrams live under <span class="mono">experiments/</span>. CLI and similarity ingestion live under <span class="mono">scripts/</span>. Those files document how the graph and earlier RAG prototypes were built. They are not served by gunicorn.</p>
+              <p>Offline CSVs and a graph dump sit in <span class="mono">Database/</span>. They are research and ingestion inputs. gunicorn does not load them at startup, and they do not define the live Aura graph.</p>
+              <div class="meta-row">
+                <span>experiments/ · notebooks, not gunicorn</span>
+                <span>scripts/doctor_chatbot.py · terminal chat</span>
+                <span>scripts/EmbeddingsIngestion.py · SIMILAR_TO links</span>
+              </div>
+            </div>
+          </div>
 
+          <div class="section">
+            <p class="kicker">Built with</p>
+            <div class="built" aria-label="Technology stack">
+              <span class="chip">Python 3.11</span><span class="stack-separator">,</span>
+              <span class="chip">Flask</span><span class="stack-separator">,</span>
+              <span class="chip">gunicorn</span><span class="stack-separator">,</span>
+              <span class="chip">Neo4j Aura</span><span class="stack-separator">,</span>
+              <span class="chip">Cohere Chat</span><span class="stack-separator">,</span>
+              <span class="chip">Render</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="page-about" class="page content-page">
+      <section class="page-heading">
+        <p class="eyebrow">About RAGnosis</p>
+        <h1>A graph before the answer.</h1>
+        <p>
+          RAGnosis is a biomedical conversational interface built around
+          retrieval from a Neo4j knowledge graph followed by language
+          generation through Cohere Chat.
+        </p>
+      </section>
+
+      <section class="content-card glass">
+        <p class="eyebrow">The idea</p>
+        <h2>A chat that looks up the graph before it speaks.</h2>
+        <p>
+          You describe symptoms in the browser. Flask posts that turn, plus
+          the on-page transcript, to <code>POST /chat</code>. The server
+          searches Neo4j Aura, then asks Cohere to reply using the retrieved
+          properties and the conversation so far.
+        </p>
+        <p>
+          The live production path is keyword retrieval, not vector search.
+          Matching uses Cypher <code>CONTAINS</code> over
+          <code>name</code>, <code>text</code>, <code>description</code>,
+          <code>disease</code>, <code>symptom</code>, <code>title</code>,
+          and <code>canonical_name</code>, limited to five nodes. Embedding
+          fields are stripped before context is sent to the model.
+        </p>
+      </section>
+
+      <div class="info-grid">
+        <section class="content-card glass">
+          <p class="eyebrow">Query path</p>
+          <h2>How a turn moves through the system</h2>
+          <h3>01 · Browser</h3>
+          <p><code>index.html</code> keeps the transcript as patient/doctor turns. There is no durable server-side conversation store.</p>
+          <h3>02 · Flask</h3>
+          <p><code>app.py</code> serves the UI, exposes <code>GET /health</code>, and runs retrieval plus generation on <code>POST /chat</code>.</p>
+          <h3>03 · Neo4j Aura</h3>
+          <p>A remote graph, connected lazily over <code>neo4j+s</code>. The web process does not run Neo4j itself.</p>
+          <h3>04 · Cohere Chat</h3>
+          <p>Primary model <code>command-a-03-2025</code>, with fallback <code>command-r7b-12-2024</code> if the primary model is unavailable.</p>
+        </section>
+
+        <section class="content-card glass">
+          <p class="eyebrow">Production</p>
+          <h2>What is deployed</h2>
+          <p>The Render web service is Flask, remote Neo4j Aura, Cohere Chat, and this HTML UI. gunicorn binds <code>0.0.0.0</code> and the host-provided <code>PORT</code>.</p>
+          <p><code>GET /health</code> reports process liveness even when Aura or Cohere is down. <code>/chat</code> returns the real retrieval or generation error instead of a fabricated answer.</p>
+          <p>The production path has two experiences: the multiround Neo4j + Cohere Diagnosis chat, and the composed multimodal Agent (optional image analysis, biomedical literature and current public-health information). Voice input, speech synthesis, Gradio, and notebook-only RAG variants are not part of the production path.</p>
+          <div class="meta-row">
+            <span>runtime · Python 3.11</span>
+            <span>start · gunicorn app:app</span>
+            <span>health · GET /health</span>
+          </div>
+        </section>
+      </div>
+
+      <section class="content-card glass">
+        <p class="eyebrow">Experiments</p>
+        <h2>What stays off the live path</h2>
+        <p>Notebooks, Colab pipeline exports, and milestone diagrams live under <code>experiments/</code>. CLI and similarity ingestion live under <code>scripts/</code>. Those files document how the graph and earlier RAG prototypes were built. They are not served by gunicorn.</p>
+        <p>Offline CSVs and a graph dump sit in <code>Database/</code>. They are research and ingestion inputs. gunicorn does not load them at startup, and they do not define the live Aura graph.</p>
+        <div class="meta-row">
+          <span>experiments/ · notebooks, not gunicorn</span>
+          <span>scripts/doctor_chatbot.py · terminal chat</span>
+          <span>scripts/EmbeddingsIngestion.py · SIMILAR_TO links</span>
+        </div>
+      </section>
+
+      <section class="content-card glass">
+        <p class="eyebrow">Architecture</p>
+        <h2>Retrieval, then generation.</h2>
+        <div class="diagram">
+          <div class="node">browser · index.html · in-page transcript</div>
+          <div class="arrow">GET / · GET /health · POST /chat</div>
+          <div class="node">flask · app.py · gunicorn · python 3.11</div>
+          <div class="split">
+            <div class="node">neo4j aura · CONTAINS · limit 5 · embeddings stripped</div>
+            <div class="node">cohere chat · command-a-03-2025 · fallback command-r7b-12-2024</div>
+          </div>
+          <div class="arrow">json · response · disclaimer · context_found</div>
+          <div class="node">web interface · text reply · status pills</div>
+        </div>
+      </section>
+
+      <section class="content-card glass">
+        <p class="eyebrow">Engineering</p>
+        <h2>How the boundaries are kept clear.</h2>
+        <p>Secrets stay in environment variables. The application can start without a live Aura connection. The health endpoint reports process liveness separately from dependency state, while chat errors are returned rather than replaced with fabricated answers.</p>
+        <h3>Conversation storage</h3>
+        <p>The browser maintains the on-page conversation transcript and sends it with each turn. There is no durable server-side conversation store.</p>
+        <h3>Limitations</h3>
+        <p>Production retrieval is keyword/property matching rather than semantic vector search. At most five matching nodes are returned, and offline files in <code>Database/</code> should not be assumed to represent the current contents of the live Aura graph.</p>
+      </section>
+
+      <section class="content-card glass">
+        <p class="eyebrow">Repository</p>
+        <pre class="tree">app.py              production Flask entry
+index.html          production UI
+requirements.txt    production dependencies
+render.yaml         Render service definition
+Database/           offline graph/export material
+scripts/            CLI chatbot and ingestion
+experiments/        notebooks and research exports</pre>
+      </section>
+    </main>    <section id="page-diagnosis" class="page diagnosis-page">
+
+
+      <section class="diagnosis-layout">
+
+        <section class="diagnosis-card glass">
+
+          <header class="chat-header">
+
+            <div>
+              <p class="eyebrow" style="margin-bottom: 2px;">
+                RAGnosis
+              </p>
+
+              <h1 class="chat-title">
+                Biomedical conversation
+              </h1>
+            </div>
+
+            <div class="chat-status">
+              <span id="health-dot" class="status-dot"></span>
+              <span id="health-text">checking</span>
+            </div>
+
+          </header>
+
+
+          <div id="chat" class="chat">
+
+            <div class="message-row assistant">
+
+              <div class="message">
+
+                <div class="message-label">
+                  RAGnosis
+                </div>
+
+                <div class="message-body">
+                  <p>
+                    Hello. Please tell me how you are feeling today.
+                  </p>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <form id="composer" class="composer">
+
+            <input
+              type="text"
+              id="message"
+              autocomplete="off"
+              placeholder="Describe how you feel..."
+              aria-label="Message RAGnosis"
+            />
+
+            <button
+              type="submit"
+              id="send"
+              class="send-button"
+            >
+              Send
+            </button>
+
+          </form>
+
+
+          <p id="disclaimer" class="diagnosis-disclaimer">
+            RAGnosis is an informational biomedical assistant.
+            It does not provide professional medical diagnosis or
+            treatment and is not a substitute for qualified clinical
+            care. Seek in-person medical help for personal health
+            decisions.
+          </p>
+
+        </section>
+
+      </section>
+
+        </section>
+
+  <!-- ============================================================
+       DIAGNOSIS SANDWICH MENU
+       ============================================================ -->
+
+  <button
+    id="menu-button"
+    class="menu-button"
+    type="button"
+    aria-label="Open diagnosis information"
+    aria-expanded="false"
+  >
+    <span class="menu-icon">
+      <span></span>
+      <span></span>
+      <span></span>
+    </span>
+  </button>
+
+
+  <aside id="menu-panel" class="menu-panel">
+
+    <section class="menu-section">
+
+      <h2 class="menu-section-title">
+        Retrieval
+      </h2>
+
+      <p>
+        Each message is searched in Neo4j Aura with case-insensitive
+        <code>CONTAINS</code> on selected properties. At most five
+        nodes come back. Those properties, without embedding vectors,
+        are passed to Cohere with the current transcript.
+      </p>
+
+      <span class="menu-code">
+        POST /chat · context_found · limit 5
+      </span>
+
+    </section>
+
+
+    <section class="menu-section">
+
+      <h2 class="menu-section-title">
+        Prompts
+      </h2>
+
+      <p>
+        Useful questions to explore the graph-grounded conversation:
+      </p>
+
+      <div class="prompt-list">
+        <button type="button" class="prompt" data-fill="I have had a sore throat and headache for two days.">Sore throat and headache for two days</button>
+
+        <button type="button" class="prompt" data-fill="I feel feverish and unusually tired. What should I watch for?">Feverish and tired</button>
+
+        <button type="button" class="prompt" data-fill="I have a persistent cough. What follow-up questions would you ask?">Persistent cough</button>
+      </div>
+
+    </section>
+
+
+    <section class="menu-section">
+
+      <h2 class="menu-section-title">
+        Status
+      </h2>
+
+      <p>
+        Reports whether Neo4j is configured and connected, and
+        whether a Cohere key is present.
+      </p>
+
+      <div class="health-line">
+        <span id="menu-neo-dot" class="status-dot"></span>
+        <span id="menu-neo">Neo4j: checking</span>
+      </div>
+
+      <div class="health-line">
+        <span id="menu-cohere-dot" class="status-dot"></span>
+        <span id="menu-cohere">Cohere: checking</span>
+      </div>
+
+    </section>
+
+  </aside>
+
+
+
+      <section id="page-agent" class="page agent-page">
+        <div class="shell">
+          <div class="agent-heading">
+            <p class="eyebrow">Multimodal agent</p>
+            <h1>Ask once. See the whole chain of evidence.</h1>
+            <p>
+              The agent takes a question, an optional explicit location, and an
+              optional image, then routes deterministically to graph knowledge,
+              biomedical literature (PubMed), image observations, and
+              <strong>current public-health information</strong>. It returns a
+              grounded, safety-checked answer with full provenance, an execution
+              trace and freshness timestamps. Location is used only when you
+              type it; it is never inferred.
+            </p>
+          </div>
+
+          <div class="agent-status-bar" aria-label="Service configuration">
+            <span class="status-caption">Services</span>
+            <span class="status-pill" id="agent-vision-pill">
+              <span class="dot"></span>
+              <span class="status-label">Vision</span>
+              <span class="status-value" id="agent-vision-status">checking</span>
+            </span>
+            <span class="status-pill" id="agent-gen-pill">
+              <span class="dot"></span>
+              <span class="status-label">Generation</span>
+              <span class="status-value" id="agent-gen-status">checking</span>
+            </span>
+            <span class="status-pill" id="agent-health-pill">
+              <span class="dot"></span>
+              <span class="status-label">Health intelligence</span>
+              <span class="status-value" id="agent-health-status">checking</span>
+            </span>
+          </div>
+
+          <div class="agent-card agent-form-card">
+            <div class="agent-field">
+              <label class="agent-field-label" for="agent-question">Question</label>
+              <textarea id="agent-question" placeholder="e.g. Is there a current dengue outbreak I should be aware of?">Is there a current disease outbreak I should be aware of?</textarea>
+            </div>
+
+            <div class="agent-field">
+              <label class="agent-field-label" for="agent-location">
+                Location <span class="agent-field-hint">(optional, explicit only, never inferred)</span>
+              </label>
+              <input type="text" id="agent-location" placeholder="e.g. Hyderabad, Telangana, India" />
+            </div>
+
+            <div class="agent-field">
+              <label class="agent-field-label" for="agent-image">
+                Image <span class="agent-field-hint">(optional: png, jpg, jpeg, webp, bmp, tif, tiff)</span>
+              </label>
+              <input type="file" id="agent-image" accept=".png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff" />
+            </div>
+
+            <div class="agent-actions">
+              <button id="agent-submit" class="btn" type="button">Analyze</button>
+            </div>
+          </div>
+
+          <div id="agent-result">
+            <div class="agent-answer-block">
+              <div class="agent-answer-head">
+                <h2>Answer</h2>
+                <span id="agent-safety-badge" class="agent-badge">pass</span>
+              </div>
+              <div id="agent-answer" class="agent-answer"></div>
+            </div>
+            <div id="agent-trace"></div>
+            <div id="agent-health"></div>
+            <div id="agent-warnings"></div>
+            <div id="agent-observations"></div>
+            <div id="agent-evidence"></div>
+            <div id="agent-limitations"></div>
+            <div id="agent-meta" class="agent-meta"></div>
+          </div>
+
+          <p class="agent-disclaimer">
+            Informational research assistant only. This is not a diagnostic tool,
+            does not provide a medical diagnosis, and does not assess whether you
+            personally are infected. Live public-health data is not real-time or
+            globally exhaustive, and absence of a report is not proof no outbreak
+            exists. Always consult a qualified clinician.
+          </p>
+        </div>
+      </section>
+
+      <section id="page-contact" class="page">
+        <div class="shell">
+          <p class="kicker">Contact</p>
+          <h2>Project channels, not a clinic.</h2>
+          <p>RAGnosis is an informational biomedical assistant maintained as an open GitHub project. Use these addresses for the software, not for personal medical advice.</p>
+
+          <div class="grid-2" style="margin-top: 28px;">
+            <div class="panel">
+              <ul class="contact-list">
+                <li>
+                  <span>Email</span>
+                  <a href="mailto:anumulasamarth008@gmail.com">anumulasamarth008@gmail.com</a>
+                </li>
+                <li>
+                  <span>Email</span>
+                  <a href="mailto:sathvik2903@gmail.com">sathvik2903@gmail.com</a>
+                </li>
+                <li>
+                  <span>Source</span>
+                  <a href="https://github.com/samxkevin/RAGnosis">github.com/samxkevin/RAGnosis</a>
+                </li>
+              </ul>
+            </div>
+            <div class="panel">
+              <p class="kicker">Production path</p>
+              <h3>Project note</h3>
+              <p class="muted">Production is the Flask service in <span class="mono">app.py</span>: remote Neo4j Aura keyword retrieval, Cohere generation, Render hosting. Experimental notebooks and graph-construction scripts are separate from that path.</p>
+              <p class="kicker">Intended use</p>
+              <p class="muted">Ask questions, inspect how graph context is used, and review the retrieval pipeline. Do not use replies as diagnosis or treatment. Seek in-person medical help for personal health decisions.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">RAGnosis · informational only · not a substitute for clinical care</footer>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      /* Full-screen canvas field. Inline JS so file:// works. */
+      (function initAmbient() {
+        var canvas = document.getElementById("ambient");
+        if (!canvas || !canvas.getContext) return;
+        var ctx = canvas.getContext("2d", { alpha: false });
+        if (!ctx) return;
+
+        var reduce = false;
+        try {
+          reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        } catch (err) {}
+
+        var w = 1, h = 1, dpr = 1;
+        var x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+        var tx = 0, ty = 0;
+        var intensity = 0.85;
+        var lastMove = 0;
+        var hasPointer = false;
+        var prev = 0;
+
+        function resize() {
+          dpr = Math.min(window.devicePixelRatio || 1, 2);
+          w = window.innerWidth || 1;
+          h = window.innerHeight || 1;
+          canvas.width = Math.max(1, Math.floor(w * dpr));
+          canvas.height = Math.max(1, Math.floor(h * dpr));
+          canvas.style.width = w + "px";
+          canvas.style.height = h + "px";
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          if (!hasPointer) {
+            tx = w * 0.58;
+            ty = h * 0.3;
+            x1 = tx;
+            y1 = ty;
+            x2 = w * 0.42;
+            y2 = h * 0.48;
+          }
+        }
+
+        function blob(cx, cy, radius, alpha) {
+          var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+          g.addColorStop(0, "rgba(255,255,255," + alpha + ")");
+          g.addColorStop(0.18, "rgba(220,220,220," + (alpha * 0.5) + ")");
+          g.addColorStop(0.45, "rgba(110,110,110," + (alpha * 0.16) + ")");
+          g.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, w, h);
+        }
+
+        function paint() {
+          ctx.globalCompositeOperation = "source-over";
+          ctx.fillStyle = "#000000";
+          ctx.fillRect(0, 0, w, h);
+
+          var R = Math.max(w, h) * 0.95;
+          ctx.globalCompositeOperation = "lighter";
+          blob(x1, y1, R, 0.36 * intensity);
+          blob(x2, y2, R * 1.05, 0.22 * intensity);
+          blob(w * 0.1, h * 0.86, R * 0.62, 0.1);
+          blob(w * 0.9, h * 0.14, R * 0.48, 0.08);
+          ctx.globalCompositeOperation = "source-over";
+        }
+
+        function frame(now) {
+          prev = now;
+          var idle = !hasPointer || (now - lastMove > 160);
+          var t = now * 0.00009;
+          var driftX = Math.sin(t) * w * 0.2 + Math.sin(t * 0.37) * w * 0.08;
+          var driftY = Math.cos(t * 0.71) * h * 0.14 + Math.cos(t * 0.21) * h * 0.06;
+          var ax = idle ? w * 0.5 + driftX : tx;
+          var ay = idle ? h * 0.36 + driftY : ty;
+
+          var k1 = idle ? 0.04 : 0.13;
+          var k2 = idle ? 0.018 : 0.038;
+          x1 += (ax - x1) * k1;
+          y1 += (ay - y1) * k1;
+          x2 += (ax - x2) * k2;
+          y2 += (ay - y2) * k2;
+
+          var lag = Math.hypot(ax - x2, ay - y2);
+          var want = idle ? 0.72 : Math.min(1.15, 0.82 + lag / 1100);
+          intensity += (want - intensity) * 0.09;
+          paint();
+          requestAnimationFrame(frame);
+        }
+
+        function onMove(e) {
+          hasPointer = true;
+          tx = e.clientX;
+          ty = e.clientY;
+          lastMove = performance.now();
+        }
+
+        resize();
+        window.addEventListener("resize", resize);
+        window.addEventListener("pointermove", onMove, { passive: true });
+        window.addEventListener("pointerdown", onMove, { passive: true });
+
+        if (reduce) {
+          x1 = w * 0.44;
+          y1 = h * 0.3;
+          x2 = w * 0.64;
+          y2 = h * 0.5;
+          intensity = 0.6;
+          paint();
+          return;
+        }
+        requestAnimationFrame(frame);
+      })();
+
+      var pages = ["home", "about", "diagnosis", "agent", "contact"];
+
+      function showPage(id) {
+        if (pages.indexOf(id) === -1) id = "home";
+        var i, el, links;
+        for (i = 0; i < pages.length; i++) {
+          el = document.getElementById("page-" + pages[i]);
+          if (el) el.classList.toggle("is-active", pages[i] === id);
+        }
+        links = document.querySelectorAll("[data-page]");
+        for (i = 0; i < links.length; i++) {
+          links[i].classList.toggle("is-active", links[i].getAttribute("data-page") === id);
+        }
+        if (id === "diagnosis") {
+          var input = document.getElementById("message");
+          if (input) input.focus();
+        }
+        if (id === "agent") {
+          var q = document.getElementById("agent-question");
+          if (q) q.focus();
+        }
+        window.scrollTo(0, 0);
+      }
+
+      function pageFromHash() {
+        showPage((location.hash || "#home").replace("#", ""));
+      }
+
+      document.addEventListener("click", function (e) {
+        var a = e.target.closest ? e.target.closest("[data-page]") : null;
+        if (!a) return;
+        var id = a.getAttribute("data-page");
+        if (!id) return;
+        e.preventDefault();
+        if (location.hash !== "#" + id) location.hash = id;
+        else showPage(id);
+      });
+      window.addEventListener("hashchange", pageFromHash);
+      pageFromHash();
+
+    /* ============================================================
+       SAFE MARKDOWN RENDERER
+       ============================================================ */
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function inlineMarkdown(value) {
+      let text = escapeHtml(value);
+
+      /*
+        Protect inline code before applying other formatting.
+      */
+
+      const codeParts = [];
+
+      text = text.replace(
+        /`([^`\n]+)`/g,
+        (_, code) => {
+          const token = `@@CODE_${codeParts.length}@@`;
+
+          codeParts.push(
+            `<code class="inline-code">${code}</code>`
+          );
+
+          return token;
+        }
+      );
+
+      /*
+        Bold.
+      */
+
+      text = text.replace(
+        /\*\*([^*\n]+)\*\*/g,
+        "<strong>$1</strong>"
+      );
+
+      /*
+        Italic.
+      */
+
+      text = text.replace(
+        /(^|[^*])\*([^*\n]+)\*(?!\*)/g,
+        "$1<em>$2</em>"
+      );
+
+      /*
+        Restore code.
+      */
+
+      codeParts.forEach((code, index) => {
+        text = text.replace(
+          `@@CODE_${index}@@`,
+          code
+        );
+      });
+
+      return text;
+    }
+
+    function renderMarkdown(markdown) {
+      const source = String(markdown || "")
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n");
+
+      const lines = source.split("\n");
+
+      let html = "";
+
+      let paragraph = [];
+      let listType = null;
+      let listItems = [];
+
+      function flushParagraph() {
+        if (!paragraph.length) {
+          return;
+        }
+
+        const content = paragraph
+          .join(" ")
+          .trim();
+
+        if (content) {
+          html += `<p>${inlineMarkdown(content)}</p>`;
+        }
+
+        paragraph = [];
+      }
+
+      function flushList() {
+        if (!listItems.length) {
+          return;
+        }
+
+        const tag = listType || "ul";
+
+        html += `<${tag}>`;
+
+        listItems.forEach((item) => {
+          html += `<li>${inlineMarkdown(item)}</li>`;
+        });
+
+        html += `</${tag}>`;
+
+        listType = null;
+        listItems = [];
+      }
+
+      function isOrdered(line) {
+        return /^\s*\d+\.\s+/.test(line);
+      }
+
+      function isUnordered(line) {
+        return /^\s*[-*+]\s+/.test(line);
+      }
+
+      for (let i = 0; i < lines.length; i++) {
+        const raw = lines[i];
+        const line = raw.trim();
+
+        if (!line) {
+          flushParagraph();
+          flushList();
+          continue;
+        }
+
+        /*
+          Fenced code blocks.
+        */
+
+        if (line.startsWith("```")) {
+          flushParagraph();
+          flushList();
+
+          const codeLines = [];
+          i++;
+
+          while (
+            i < lines.length &&
+            !lines[i].trim().startsWith("```")
+          ) {
+            codeLines.push(lines[i]);
+            i++;
+          }
+
+          html += `
+            <pre><code>${escapeHtml(
+              codeLines.join("\n")
+            )}</code></pre>
+          `;
+
+          continue;
+        }
+
+        /*
+          Headings.
+        */
+
+        const heading = line.match(
+          /^(#{1,3})\s+(.+)$/
+        );
+
+        if (heading) {
+          flushParagraph();
+          flushList();
+
+          const level = heading[1].length;
+
+          html += `
+            <h${level}>
+              ${inlineMarkdown(heading[2])}
+            </h${level}>
+          `;
+
+          continue;
+        }
+
+        /*
+          Blockquotes.
+        */
+
+        if (line.startsWith("> ")) {
+          flushParagraph();
+          flushList();
+
+          html += `
+            <blockquote>
+              ${inlineMarkdown(line.slice(2))}
+            </blockquote>
+          `;
+
+          continue;
+        }
+
+        /*
+          Ordered list.
+        */
+
+        if (isOrdered(line)) {
+          flushParagraph();
+
+          if (listType !== "ol") {
+            flushList();
+            listType = "ol";
+          }
+
+          listItems.push(
+            line.replace(/^\s*\d+\.\s+/, "")
+          );
+
+          continue;
+        }
+
+        /*
+          Unordered list.
+        */
+
+        if (isUnordered(line)) {
+          flushParagraph();
+
+          if (listType !== "ul") {
+            flushList();
+            listType = "ul";
+          }
+
+          listItems.push(
+            line.replace(/^\s*[-*+]\s+/, "")
+          );
+
+          continue;
+        }
+
+        /*
+          Normal prose.
+        */
+
+        if (listType) {
+          flushList();
+        }
+
+        paragraph.push(line);
+      }
+
+      flushParagraph();
+      flushList();
+
+      return html || "<p></p>";
+    }
+
+
+    /* ============================================================
+       CHAT
+       ============================================================ */
+
+    const conversation = [];
+
+    const chatEl = document.getElementById("chat");
+    const inputEl = document.getElementById("message");
+    const sendBtn = document.getElementById("send");
+    const composer = document.getElementById("composer");
+
+    function addMessage(who, text, type) {
+      const row = document.createElement("div");
+
+      row.className =
+        "message-row " +
+        (type === "user" ? "user" : "assistant");
+
+      const message = document.createElement("div");
+      message.className = "message";
+
+      const label = document.createElement("div");
+      label.className = "message-label";
+      label.textContent = who;
+
+      const body = document.createElement("div");
+      body.className = "message-body";
+
+      if (type === "user") {
+        body.textContent = text;
+      } else {
+        body.innerHTML = renderMarkdown(text);
+      }
+
+      message.appendChild(label);
+      message.appendChild(body);
+
+      row.appendChild(message);
+      chatEl.appendChild(row);
+
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function addLoadingMessage() {
+      const row = document.createElement("div");
+
+      row.className =
+        "message-row assistant";
+
+      row.id = "loading-message";
+
+      const message = document.createElement("div");
+      message.className = "message";
+
+      const label = document.createElement("div");
+      label.className = "message-label";
+      label.textContent = "RAGnosis";
+
+      const body = document.createElement("div");
+      body.className = "message-body";
+
+      body.innerHTML = `
+        <p class="muted">
+          Looking up the graph...
+        </p>
+      `;
+
+      message.appendChild(label);
+      message.appendChild(body);
+
+      row.appendChild(message);
+      chatEl.appendChild(row);
+
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function removeLoadingMessage() {
+      const loading =
+        document.getElementById("loading-message");
+
+      if (loading) {
+        loading.remove();
+      }
+    }
+
+    async function sendMessage() {
+      const msg = inputEl.value.trim();
+
+      if (!msg || sendBtn.disabled) {
+        return;
+      }
+
+      inputEl.value = "";
+
+      addMessage("You", msg, "user");
+
+      sendBtn.disabled = true;
+
+      addLoadingMessage();
+
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json"
+          },
+
+          body: JSON.stringify({
+            message: msg,
+            conversation: conversation
+          })
+        });
+
+        const data = await response.json();
+
+        removeLoadingMessage();
+
+        const reply =
+          data.response ||
+          "No response returned.";
+
+        addMessage(
+          "RAGnosis",
+          reply,
+          "assistant"
+        );
+
+        conversation.push({
+          patient: msg,
+          doctor: reply
+        });
+
+      } catch (error) {
+        removeLoadingMessage();
+
+        addMessage(
+          "RAGnosis",
+          "The chat service could not be reached. Please try again.",
+          "assistant"
+        );
+
+      } finally {
+        sendBtn.disabled = false;
+        inputEl.focus();
+      }
+    }
+
+    composer.addEventListener(
+      "submit",
+      (event) => {
+        event.preventDefault();
+        sendMessage();
+      }
+    );
+
+
+    /* ============================================================
+       HEALTH
+       ============================================================ */
+
+    const healthDot =
+      document.getElementById("health-dot");
+
+    const healthText =
+      document.getElementById("health-text");
+
+    const menuNeoDot =
+      document.getElementById("menu-neo-dot");
+
+    const menuNeo =
+      document.getElementById("menu-neo");
+
+    const menuCohereDot =
+      document.getElementById("menu-cohere-dot");
+
+    const menuCohere =
+      document.getElementById("menu-cohere");
+
+    const disclaimer =
+      document.getElementById("disclaimer");
+
+    function setHealthStatus(
+      dot,
+      text,
+      ok,
+      label
+    ) {
+      dot.classList.remove("ok", "bad");
+
+      dot.classList.add(
+        ok ? "ok" : "bad"
+      );
+
+      text.textContent = label;
+    }
+
+    async function loadHealth() {
+      try {
+        const response =
+          await fetch("/health", {
+            cache: "no-store"
+          });
+
+        if (!response.ok) {
+          throw new Error("Health request failed");
+        }
+
+        const data =
+          await response.json();
+
+        const neoConnected =
+          Boolean(
+            data.neo4j &&
+            data.neo4j.connected
+          );
+
+        const cohereConfigured =
+          Boolean(
+            data.cohere &&
+            data.cohere.configured
+          );
+
+        setHealthStatus(
+          healthDot,
+          healthText,
+          neoConnected,
+          neoConnected
+            ? "Neo4j connected"
+            : "Neo4j unavailable"
+        );
+
+        setHealthStatus(
+          menuNeoDot,
+          menuNeo,
+          neoConnected,
+          neoConnected
+            ? "Neo4j: connected"
+            : "Neo4j: unavailable"
+        );
+
+        setHealthStatus(
+          menuCohereDot,
+          menuCohere,
+          cohereConfigured,
+          cohereConfigured
+            ? "Cohere: configured"
+            : "Cohere: missing key"
+        );
+
+        if (data.disclaimer) {
+          disclaimer.textContent =
+            data.disclaimer;
+        }
+
+      } catch (error) {
+
+        setHealthStatus(
+          healthDot,
+          healthText,
+          false,
+          "status unavailable"
+        );
+
+        setHealthStatus(
+          menuNeoDot,
+          menuNeo,
+          false,
+          "Neo4j: status unavailable"
+        );
+
+        setHealthStatus(
+          menuCohereDot,
+          menuCohere,
+          false,
+          "Cohere: status unavailable"
+        );
+      }
+    }
+
+    var promptButtons = document.querySelectorAll(".prompt[data-fill]");
+    for (var p = 0; p < promptButtons.length; p++) {
+      promptButtons[p].addEventListener("click", function () {
+        var input = document.getElementById("message");
+        if (!input) return;
+        input.value = this.getAttribute("data-fill") || "";
+        input.focus();
+        closeMenu();
+      });
+    }
+
+    loadHealth();
+
+
+    /* ============================================================
+       MULTIMODAL AGENT (POST /agent)
+       Composed agent: question + optional explicit location + optional
+       image -> deterministic routing -> vision, PubMed, live public-health
+       intelligence, evidence fusion, provenance, execution trace, safety.
+       This is a separate pipeline from the Neo4j+Cohere /chat above and
+       does NOT itself query Neo4j. Rendered in the RAGnosis monochrome UI.
+       ============================================================ */
+    (function () {
+      var submit = document.getElementById("agent-submit");
+      if (!submit) return;
+
+      function aesc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+        });
+      }
+
+      // Drives one status pill. Preserves the exact configured / not
+      // configured semantics; never fabricates a value.
+      function setAgentStatus(valueId, pillId, ok) {
+        var value = document.getElementById(valueId);
+        var pill = document.getElementById(pillId);
+        if (value) value.textContent = ok ? "configured" : "not configured";
+        if (pill) {
+          pill.classList.remove("is-ok", "is-off");
+          pill.classList.add(ok ? "is-ok" : "is-off");
+        }
+      }
+
+      async function loadAgentHealth() {
+        try {
+          var r = await fetch("/health", { cache: "no-store" });
+          var h = await r.json();
+          setAgentStatus("agent-vision-status", "agent-vision-pill", h.vision_configured);
+          setAgentStatus("agent-gen-status", "agent-gen-pill", h.generation_configured);
+          setAgentStatus("agent-health-status", "agent-health-pill", h.health_intelligence_configured);
+        } catch (e) {
+          ["agent-vision-status", "agent-gen-status", "agent-health-status"].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = "unknown";
+          });
+          ["agent-vision-pill", "agent-gen-pill", "agent-health-pill"].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) { el.classList.remove("is-ok", "is-off"); }
+          });
+        }
+      }
+
+      function clearAgent() {
+        ["agent-warnings", "agent-observations", "agent-evidence",
+         "agent-limitations", "agent-meta", "agent-trace", "agent-health"]
+          .forEach(function (id) { document.getElementById(id).innerHTML = ""; });
+      }
+
+      function renderAgentError(msg) {
+        document.getElementById("agent-safety-badge").style.display = "none";
+        document.getElementById("agent-answer").innerHTML =
+          '<span class="warn">' + aesc(msg) + "</span>";
+        clearAgent();
+      }
+
+      function renderAgentHealth(h) {
+        var el = document.getElementById("agent-health");
+        if (!h) { el.innerHTML = ""; return; }
+        var html = '<div class="agent-section">';
+        html += "<h3>Current public health information</h3>";
+        html += '<p class="muted">Live data status: <strong>' + aesc(h.live_data_status) + "</strong>" +
+          (h.from_cache ? ' <span class="pill">cached</span>' : "") +
+          " &middot; Last checked: <strong>" + aesc(h.retrieved_at) + "</strong></p>";
+        html += '<p class="muted">Sources reached: ' + aesc((h.sources_succeeded || []).join(", ") || "none") +
+          ((h.sources_failed || []).length ? " &middot; failed: " + aesc(h.sources_failed.join(", ")) : "") + "</p>";
+        (h.notes || []).forEach(function (n) { html += '<p class="muted">' + aesc(n) + "</p>"; });
+
+        var fs = h.findings || [];
+        if (fs.length) {
+          html += '<div class="agent-table-wrap"><table><thead><tr><th>Disease</th><th>Status</th><th>Transmission</th>' +
+            "<th>Affected areas</th><th>Relevance</th><th>Risk</th><th>Alert</th><th>Freshness</th><th>Sources</th></tr></thead><tbody>";
+          fs.forEach(function (f) {
+            var alertCls = f.alert_level === "official_alert" || f.alert_level === "elevated" ? "alert"
+              : (f.alert_level === "watch" ? "watch" : "");
+            var qmatch = f.matched_query ? ' <span class="pill">query match</span>' : "";
+            var areas = (f.affected_areas || []).length
+              ? aesc((f.affected_areas || []).join(", ")) : '<span class="muted">-</span>';
+            html += "<tr>" +
+              "<td><strong>" + aesc(f.disease_name) + "</strong>" + qmatch +
+                (f.finding_id ? '<br><span class="muted">id ' + aesc(f.finding_id) + "</span>" : "") +
+                (f.uncertainty ? '<br><span class="muted">' + aesc(f.uncertainty) + "</span>" : "") +
+                (f.conflict_summary ? '<br><span class="muted">' + aesc(f.conflict_summary) + "</span>" : "") +
+                (f.data_gap_state ? '<br><span class="muted">gap: ' + aesc(f.data_gap_state) + "</span>" : "") + "</td>" +
+              "<td>" + aesc(f.status) + (f.status_source_term ? '<br><span class="muted">"' + aesc(f.status_source_term) + '"</span>' : "") +
+                '<br><span class="muted">' + aesc(f.geo_scope) + "</span></td>" +
+              "<td>" + aesc(f.transmission_class) + "</td>" +
+              "<td>" + areas + "</td>" +
+              "<td>" + aesc(f.relevance_to_location) + '<br><span class="muted">' + aesc(f.requested_location) + "</span></td>" +
+              "<td>" + aesc(f.risk_assessment) + (f.severity ? "<br>" + aesc(f.severity) : "") + "</td>" +
+              '<td><span class="pill ' + alertCls + '">' + aesc(f.alert_level) + "</span></td>" +
+              "<td>" + aesc(f.freshness_state) + '<br><span class="muted">' + aesc(f.updated_at || f.published_at || "-") + "</span></td>" +
+              "<td>" + (f.sources || []).map(function (s) {
+                  var org = s.uri
+                    ? '<a href="' + aesc(s.uri) + '" target="_blank" rel="noopener">' + aesc(s.organization) + "</a>"
+                    : aesc(s.organization);
+                  var tier = s.tier ? ' <span class="muted">(' + aesc(s.tier) + ")</span>" : "";
+                  var exc = s.excerpt ? '<br><span class="muted">' + aesc(s.excerpt.slice(0, 160)) + "</span>" : "";
+                  return org + tier + exc;
+                }).join("<br><br>") + "</td>" +
+              "</tr>";
+          });
+          html += "</tbody></table></div>";
+          html += '<p class="muted agent-legend" style="margin-top:8px">Legend: <strong>OBSERVED</strong> = image observation &middot; ' +
+            "<strong>RETRIEVED</strong> = from a source &middot; <strong>CURRENT</strong> = fresh live data (freshness \"current\") &middot; " +
+            "<strong>NOT ESTABLISHED</strong> = status unknown / no relevant report. Interpretation is never presented as source fact.</p>";
+        }
+        html += "</div>";
+        el.innerHTML = html;
+      }
+
+      function renderAgent(d) {
+        clearAgent();
+        var badge = document.getElementById("agent-safety-badge");
+        badge.style.display = "inline-block";
+        badge.textContent = d.safety_action || "pass";
+        badge.className = "agent-badge " + (d.safety_action || "pass");
+
+        // Render the answer with the shared, safe markdown formatter (same one
+        // the diagnosis chat uses). It HTML-escapes all content first, then
+        // applies only paragraphs, bullet/numbered lists, simple headings,
+        // **bold**, *italic* and `inline code`. No markdown dependency, and
+        // raw model HTML is never interpreted.
+        document.getElementById("agent-answer").innerHTML =
+          renderMarkdown(d.answer == null ? "" : String(d.answer));
+
+        if (d.needs_location) {
+          document.getElementById("agent-trace").innerHTML =
+            '<div class="agent-trace"><h3>Location required</h3><p class="muted">' +
+            aesc(d.location_prompt || "") + "</p></div>";
+          return;
+        }
+
+        // Execution trace (declarative metadata, not chain-of-thought).
+        var t = d.trace || {};
+        var locs = (t.locations || []).map(function (l) {
+          return aesc(l.normalized || l.raw) + ' <span class="muted">(' + aesc(l.granularity) + ")</span>";
+        }).join(", ") || "-";
+        var srcMap = t.sources || {};
+        var srcHtml = Object.keys(srcMap).length
+          ? Object.keys(srcMap).map(function (k) { return aesc(k) + ": <strong>" + aesc(srcMap[k]) + "</strong>"; }).join(" &middot; ")
+          : "-";
+        var evc = t.evidence_counts || {};
+        var evcHtml = Object.keys(evc).length
+          ? Object.keys(evc).map(function (k) { return aesc(k) + "=" + aesc(evc[k]); }).join(", ")
+          : "-";
+        document.getElementById("agent-trace").innerHTML =
+          '<div class="agent-trace">' +
+          "<h3>Execution trace</h3>" +
+          '<p>Route: <code>' + aesc(t.route || d.route) + "</code> &middot; " +
+          "Tools: " + aesc((t.tools_used || []).join(", ") || "none") + "</p>" +
+          "<p>Retrieval: " + aesc(t.retrieval_status) + " &middot; " +
+          "Live data: " + aesc(t.live_data_status) + " &middot; " +
+          "Safety: " + aesc(t.safety_action) + "</p>" +
+          "<p>Sources queried: " + srcHtml + "</p>" +
+          "<p>Evidence by type: " + evcHtml + "</p>" +
+          "<p>Current data used: <strong>" + aesc(String(!!t.used_current_data)) + "</strong>" +
+          " &middot; Cache hit: <strong>" + aesc(String(!!t.cache_hit)) + "</strong>" +
+          " &middot; Conflicts present: <strong>" + aesc(String(!!t.conflicts_present)) + "</strong></p>" +
+          "<p>Requested location(s): " + locs + "</p>" +
+          (t.last_checked ? "<p>Last checked: <strong>" + aesc(t.last_checked) + "</strong></p>" : "") +
+          ((t.router_reasons || []).length ? '<details><summary>why this route</summary><ul>' +
+            t.router_reasons.map(function (r) { return "<li>" + aesc(r) + "</li>"; }).join("") + "</ul></details>" : "") +
+          "</div>";
+
+        renderAgentHealth(d.health);
+
+        var warns = (d.warnings || []);
+        document.getElementById("agent-warnings").innerHTML = warns.length
+          ? '<div class="agent-note is-warnings"><h3>Safety warnings</h3><ul>' +
+            warns.map(function (w) { return "<li>" + aesc(w) + "</li>"; }).join("") + "</ul></div>"
+          : "";
+
+        var obs = (d.observations || []);
+        document.getElementById("agent-observations").innerHTML = obs.length
+          ? '<div class="agent-section"><h3>Image observations</h3><ul>' + obs.map(function (o) {
+              return "<li><strong>" + aesc(o.label) + "</strong>: " + aesc(o.description) +
+                (o.confidence != null ? ' <span class="muted">(confidence ' + aesc(o.confidence) + ")</span>" : "") +
+                "</li>";
+            }).join("") + "</ul></div>"
+          : "";
+
+        var ev = (d.evidence || []);
+        var groups = {};
+        ev.forEach(function (e) { (groups[e.kind] = groups[e.kind] || []).push(e); });
+        var labels = {
+          pubmed_evidence: "PubMed literature",
+          neo4j_evidence: "Graph knowledge",
+          health_surveillance: "Public-health surveillance",
+          health_news: "Secondary reporting (media)"
+        };
+        var evHtml = '<div class="agent-section">';
+        evHtml += "<h3>Evidence (" + aesc(d.retrieval_status) + ")</h3>";
+        if (!ev.length) { evHtml += '<p class="muted">Status: ' + aesc(d.retrieval_status) + "</p>"; }
+        Object.keys(groups).forEach(function (k) {
+          evHtml += '<p class="muted"><strong>' + aesc(labels[k] || k) + "</strong></p><ul>" +
+            groups[k].map(function (e) {
+              var meta = e.metadata || {};
+              var dates = [];
+              var f = meta.finding;
+              if (f) {
+                if (f.published_at) dates.push("published " + aesc(f.published_at));
+                if (f.updated_at && f.updated_at !== f.published_at) dates.push("updated " + aesc(f.updated_at));
+              }
+              return "<li>" + (e.uri
+                ? '<a href="' + aesc(e.uri) + '" target="_blank" rel="noopener">' + aesc(e.title) + "</a>"
+                : aesc(e.title)) +
+                (e.source ? ' <span class="muted">&middot; ' + aesc(e.source) + "</span>" : "") +
+                (dates.length ? ' <span class="muted">(' + dates.join(", ") + ")</span>" : "") +
+                "</li>";
+            }).join("") + "</ul>";
+        });
+        evHtml += "</div>";
+        document.getElementById("agent-evidence").innerHTML = evHtml;
+
+        var lims = (d.limitations || []);
+        document.getElementById("agent-limitations").innerHTML = lims.length
+          ? '<div class="agent-note is-limitations"><h3>Limitations</h3><ul>' +
+            lims.map(function (l) { return "<li>" + aesc(l) + "</li>"; }).join("") + "</ul></div>"
+          : "";
+
+        document.getElementById("agent-meta").innerHTML =
+          "vision model: " + aesc(d.vision_model || "-") + " &middot; generation: " + aesc(d.generation_model || "-");
+      }
+
+      submit.addEventListener("click", async function () {
+        var question = document.getElementById("agent-question").value.trim();
+        var location = document.getElementById("agent-location").value.trim();
+        var file = document.getElementById("agent-image").files[0];
+        var result = document.getElementById("agent-result");
+        if (!question) { alert("Please enter a question."); return; }
+
+        submit.disabled = true; submit.textContent = "Analyzing…";
+        var fd = new FormData();
+        fd.append("question", question);
+        if (location) fd.append("location", location);
+        if (file) fd.append("image", file);
+
+        try {
+          var resp = await fetch("/agent", { method: "POST", body: fd });
+          var data = await resp.json();
+          result.style.display = "block";
+          if (!resp.ok) { renderAgentError(data.error || ("HTTP " + resp.status)); return; }
+          renderAgent(data);
+        } catch (e) {
+          result.style.display = "block";
+          renderAgentError(String(e));
+        } finally {
+          submit.disabled = false; submit.textContent = "Analyze";
+        }
+      });
+
+      loadAgentHealth();
+    })();
+
+
+    /* ============================================================
+       SANDWICH MENU
+       ============================================================ */
+
+    const menuButton =
+      document.getElementById("menu-button");
+
+    const menuPanel =
+      document.getElementById("menu-panel");
+
+    function openMenu() {
+      menuPanel.classList.add("open");
+
+      menuButton.setAttribute(
+        "aria-expanded",
+        "true"
+      );
+    }
+
+    function closeMenu() {
+      menuPanel.classList.remove("open");
+
+      menuButton.setAttribute(
+        "aria-expanded",
+        "false"
+      );
+    }
+
+    menuButton.addEventListener(
+      "click",
+      (event) => {
+        event.stopPropagation();
+
+        if (
+          menuPanel.classList.contains("open")
+        ) {
+          closeMenu();
+        } else {
+          openMenu();
+        }
+      }
+    );
+
+    document.addEventListener(
+      "click",
+      (event) => {
+        if (
+          menuPanel.classList.contains("open") &&
+          !menuPanel.contains(event.target) &&
+          !menuButton.contains(event.target)
+        ) {
+          closeMenu();
+        }
+      }
+    );
+
+
+    /* ============================================================
+       KEYBOARD SHORTCUT
+       ============================================================ */
+
+    document.addEventListener(
+      "keydown",
+      (event) => {
+        if (event.key === "Escape") {
+          closeMenu();
+        }
+      }
+    );
+    })();
+  </script>
 </body>
 </html>

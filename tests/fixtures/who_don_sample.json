@@ -1,0 +1,29 @@
+{
+  "@odata.context": "http://www.who.int/api/news/$metadata#diseaseoutbreaknews(Title,PublicationDate,ItemDefaultUrl,UrlName)",
+  "value": [
+    {
+      "PublicationDate": "2026-09-10T08:52:02Z",
+      "LastModified": "2026-09-10T09:00:00Z",
+      "UrlName": "2026-DON617",
+      "ItemDefaultUrl": "/2026-DON617",
+      "Title": "Ebola disease caused by Bundibugyo virus - Democratic Republic of the Congo",
+      "Summary": "WHO reports an ongoing Ebola disease outbreak caused by Bundibugyo virus in the Democratic Republic of the Congo, with confirmed human-to-human transmission."
+    },
+    {
+      "PublicationDate": "2026-01-30T00:00:00Z",
+      "LastModified": "2026-01-30T00:00:00Z",
+      "UrlName": "2026-DON593",
+      "ItemDefaultUrl": "/2026-DON593",
+      "Title": "Nipah virus infection - India",
+      "Summary": "The Ministry of Health and Family Welfare of India has reported a confirmed case of Nipah virus infection. Nipah is a zoonotic virus."
+    },
+    {
+      "PublicationDate": "2025-12-05T00:00:00Z",
+      "LastModified": "2025-12-05T00:00:00Z",
+      "UrlName": "2025-DON550",
+      "ItemDefaultUrl": "/2025-DON550",
+      "Title": "Oropouche virus disease - Region of the Americas",
+      "Summary": "A total of 11 634 confirmed cases have been reported across 10 countries. The outbreak primarily affected regions where the disease is endemic. Oropouche is transmitted by biting midges and some mosquitoes."
+    }
+  ]
+}

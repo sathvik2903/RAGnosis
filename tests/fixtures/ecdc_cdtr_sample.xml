@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0">
+  <channel>
+    <title>COVID-19</title>
+    <link>https://www.ecdc.europa.eu/en</link>
+    <description>ECDC feed</description>
+    <language>en</language>
+    <item>
+      <title>Communicable disease threats report, 12-18 September, week 38</title>
+      <description>This issue of the ECDC Communicable Disease Threats Report (CDTR) covers the period 12-18 September, and includes updates on Ebola, malaria, botulism, avian influenza A(H9N2), influenza A(H5), West Nile virus infections, chikungunya, dengue, Crimean-Congo haemorrhagic fever, Vibrio, measles.</description>
+      <link>https://www.ecdc.europa.eu/en/publications-data/communicable-disease-threats-report-12-18-september-week-38</link>
+      <pubDate>Fri, 18 Sep 2026 15:52:50 +0200</pubDate>
+    </item>
+    <item>
+      <title>Communicable disease threats report, 22 - 28 August, week 35</title>
+      <description>This issue includes updates on diphtheria, Ebola, swine influenza A(H1N2), Crimean-Congo haemorrhagic fever, dengue, chikungunya virus disease, West Nile virus, cholera, poliovirus and expert deployments.</description>
+      <link>https://www.ecdc.europa.eu/en/publications-data/communicable-disease-threats-report-22-28-august-week-35</link>
+      <pubDate>Fri, 28 Aug 2026 16:10:46 +0200</pubDate>
+    </item>
+  </channel>
+</rss>

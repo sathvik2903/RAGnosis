@@ -1,47 +1,15 @@
-﻿config.py
-*.env
 .env
+*.env
+# Legacy root-level secrets file only; do NOT ignore package modules like
+# multimodal/config.py (a leading slash anchors this to the repo root).
+/config.py
 __pycache__/
 *.py[cod]
-.ipynb_checkpoints
+.ipynb_checkpoints/
+.venv/
 venv/
 ENV/
-.vscode/
+*.zip
 .DS_Store
-desktop.ini
-refs/
-#Google Drive
-.DriveFS
-.DS_Store
-Thumbs.db
-desktop.ini
-*.tmp
-*.temp
-~$*
-refs/tags/desktop.ini
-#Google Drive conflict files
-*_conflict*
-* (1).*
-* (2).*
-* (3).*
-#System-specific
-Icon?
-ehthumbs.db
-.fseventsd
-.Spotlight-V100
-.Trashes
-#Git-related
-.git/
-.gitignore
-.gitattributes
-#OS
-*.swp
-*.swo
-*.bak
-*.old
 *.log
-*.lock
-#IDE
-.vscode/
-*.iml
-*.code-workspace
+.pytest_cache/
